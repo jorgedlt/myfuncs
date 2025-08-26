@@ -1,0 +1,409 @@
+#!/usr/bin/env bash
+# -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+# .myfuncs.sh # a collection of functions and aliases
+# jorge.delatorre@dematic.com - 26 Jun 2019 / 2020-12-08 / 2023-01-11
+# Updated for Linux Ubuntu 24.04 - 2024-05-15
+# -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+
+# --- INITIALIZATION: OS Detection, Colors, and Base Directory ---
+# Moved to the very top to ensure commands and colors are defined before any function uses them.
+
+# Function to set OS-specific commands for Linux environment
+get_local_os() {
+    OS="$(uname)"
+    if [[ "$OS" == "Linux" ]]; then
+        echo "Running on Linux"
+        COPY_COMMAND="xclip -selection clipboard"
+        PASTE_COMMAND="xclip -selection clipboard -o"
+        DATE_COMMAND="date"
+        SED_COMMAND="sed"
+        FOLD_COMMAND="fold"
+        SHUF_COMMAND="shuf" # GNU shuf
+        UUID_COMMAND="/usr/bin/uuidgen" # Ubuntu default uuidgen
+    else
+        echo "Unknown operating system. Defaulting to Linux commands (xclip, date, sed)."
+        COPY_COMMAND="xclip -selection clipboard"
+        PASTE_COMMAND="xclip -selection clipboard -o"
+        DATE_COMMAND="date"
+        SED_COMMAND="sed"
+        FOLD_COMMAND="fold"
+        SHUF_COMMAND="shuf"
+        UUID_COMMAND="/usr/bin/uuidgen"
+    fi
+    # Check if xclip is installed, if not, warn the user
+    if ! command -v xclip &> /dev/null; then
+        echo "${YELLOW}WARNING: xclip is not installed. Clipboard functions (clip, clop, etc.) will not work.${RESET}"
+        echo "${YELLOW}Please install it: sudo apt install xclip${RESET}"
+    fi
+    # Check if yq is installed
+    if ! command -v yq &> /dev/null; then
+        echo "${YELLOW}WARNING: yq is not installed. YAML functions (yqls, ycat, y2j, yqshow) will not work.${RESET}"
+        echo "${YELLOW}Please install it: sudo snap install yq (or similar for your system)${RESET}"
+    fi
+    # Check if jq is installed
+    if ! command -v jq &> /dev/dev/null; then
+        echo "${YELLOW}WARNING: jq is not installed. JSON functions (jcat, jqkeys, jqcheck, jqpaths, y2j) will not work.${RESET}"
+        echo "${YELLOW}Please install it: sudo apt install jq${RESET}"
+    fi
+    # Check for ccrypt and basez
+    if ! command -v ccrypt &> /dev/null || ! command -v base32 &> /dev/null; then
+        echo "${YELLOW}WARNING: ccrypt or base32 (from basez package) not found. Encryption functions (clpcry, nocry) may not work.${RESET}"
+        echo "${YELLOW}Please install: sudo apt install ccrypt basez${RESET}"
+    fi
+    # Check for neofetch (used in 'x')
+    if ! command -v neofetch &> /dev/null; then
+        echo "${YELLOW}WARNING: neofetch is not installed. 'x' command output will be incomplete.${RESET}"
+        echo "${YELLOW}Please install: sudo apt install neofetch${RESET}"
+    fi
+    # Check for tree (used in aliases)
+    if ! command -v tree &> /dev/null; then
+        echo "${YELLOW}WARNING: tree is not installed. 'tree1', 'tree2' aliases will not work.${RESET}"
+        echo "${YELLOW}Please install: sudo apt install tree${RESET}"
+    fi
+    # Check for moreutils (for sponge)
+    if ! command -v sponge &> /dev/null; then
+        echo "${YELLOW}WARNING: sponge (from moreutils) is not installed. Some in-place file modifications might be less safe.${RESET}"
+        echo "${YELLOW}Please install: sudo apt install moreutils${RESET}"
+    fi
+}
+
+# Function to set terminal colors
+set_colors() {
+    export BLACK=$(tput setaf 0 2>/dev/null)
+    export RED=$(tput setaf 1 2>/dev/null)
+    export GREEN=$(tput setaf 2 2>/dev/null)
+    export YELLOW=$(tput setaf 3 2>/dev/null)
+    export BLUE=$(tput setaf 4 2>/dev/null)
+    export MAGENTA=$(tput setaf 5 2>/dev/null)
+    export CYAN=$(tput setaf 6 2>/dev/null)
+    export WHITE=$(tput setaf 7 2>/dev/null)
+    export GRAY=$(tput setaf 8 2>/dev/null)
+    export BOLD=$(tput bold 2>/dev/null)
+    export REVERSE=$(tput rev 2>/dev/null)
+    export RESET=$(tput sgr0 2>/dev/null)
+    export NC=$(tput sgr0 2>/dev/null)
+}
+
+# Call initialization functions
+get_local_os
+set_colors
+
+# Verify colors after setting them (optional for everyday use, good for debugging)
+function verify_colors() {
+    local all_colors_set=true
+    for color in BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE GRAY BOLD REVERSE RESET NC; do
+      if [ -z "$(eval echo \$$color)" ]; then
+        echo "Color variable $color is not set."
+        all_colors_set=false
+      fi
+    done
+    $all_colors_set && echo "All color variables are correctly set." || echo "Some color variables are missing."
+}
+verify_colors # Called for initial setup, can be commented out after verification
+
+export BASEDIR="$HOME" # Use $HOME for consistency across Linux distributions
+
+# -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+#.
+#. yqls     -- LIST possible headers to show in $CONFIG_YAML
+yqls () {
+    echo $($DATE_COMMAND | grep 'CONFIG_YAML'); echo # Simplified grep
+    yq r $CONFIG_YAML | grep ^[a-z] | tr -d ':' | sed 's/^/     /'
+}
+#. ycat ~ yaml cat
+#h ycat ~ usage: yqcat foofile.yaml
+ycat () {
+  declare i=${@:-$(</dev/stdin)}
+  if [ -p /dev/stdin ]; then # If input is from pipe
+      yq r /dev/stdin
+  elif [ -f "$i" ]; then # If input is a file
+      yq r "$i"
+  else
+      echo "${RED}Error: No YAML input provided or file not found.${RESET}"
+      return 1
+  fi
+}
+#. jcat ~ json cat
+#h jcat ~ usage: jcat foofile.json
+jcat () {
+  declare i=${@:-$(</dev/stdin)}
+  if [ -p /dev/stdin ]; then # If input is from pipe
+      cat /dev/stdin | jq .
+  elif [ -f "$i" ]; then # If input is a file
+      cat "$i" | jq .
+  else
+      echo "${RED}Error: No JSON input provided or file not found.${RESET}"
+      return 1
+  fi
+}
+#. jqkeys       -- JQ parser, from PIPE show json keys
+jqkeys () {
+  local input="$([[ -p /dev/stdin ]] && cat - || echo "$@")"
+  [[ -n "$input" ]] && echo "$input" | jq '.|keys'
+  : MyFuncs : jqkeys   -- JQ parser, from PIPE show json keys
+}
+#. jqcheck   -- JQ checker, from PIPE shows if JSON is valid
+jqcheck ()
+{
+    local FILE2VALIDATE=${1}
+
+    if cat "${FILE2VALIDATE}" | jq . > /dev/null 2>&1; then # Redirect stderr to dev/null
+        printf '%s\n' "${GREEN}PASSED: JSON file [ ${CYAN}${FILE2VALIDATE}${GREEN} ] is vaild${RESET}"
+    else
+        printf '%s\n' "${RED}ERROR: JSON file [ ${CYAN}${FILE2VALIDATE}${RED} ] is NOT vaild${RESET}"
+    fi
+    : MyFuncs : jqcheck   -- JQ checker, from PIPE show if JSON is valid
+}
+#. jqpaths   -- JQ PATHS, from PIPE shows all JSON paths
+jqpaths ()
+{
+    local input="$([[ -p /dev/stdin ]] && cat - || echo "$@")";
+    [[ -n "$input" ]] && echo "$input" | jq 'select(objects)|=[.] | map( paths(scalars) ) | map( map(select(numbers)="[]") | join(".")) | unique'
+    : MyFuncs : jqpaths   -- JQ PATHS, from PIPE shows all JSON paths
+}
+#. jqjoke  -- Generates a sample JSON stanza for ramdon testing, etc
+jqjoke ()
+{
+  curl -s -H "Accept: application/json" https://icanhazdadjoke.com/ | jq .
+}
+#. y2j ~ yaml to json convert
+#h y2j ~ usage: y2j foofile.yaml  -- or y2j foofile.yaml > foofile.json
+y2j () {
+  declare i=${@:-$(</dev/stdin)}
+  if [ -p /dev/stdin ] || [ -f "$i" ]; then
+      # Use a temporary file for piped input to ensure python can read it reliably,
+      # or directly pipe if using a file argument with cat
+      local input_content
+      if [ -p /dev/stdin ]; then
+          input_content=$(cat /dev/stdin)
+      else
+          input_content=$(cat "$i")
+      fi
+      python3 -c 'import sys, yaml, json; json.dump(yaml.safe_load(sys.stdin), sys.stdout, indent=4)' <<< "$input_content" | jq .
+  else
+      echo "${RED}Error: No YAML input provided or file not found.${RESET}"
+      return 1
+  fi
+}
+#. yqshow   -- SHOW requested stansa from $CONFIG_YAML
+yqshow () {
+    if (( $# < 1 )); then
+        echo "ERROR usage: Needs at least one arguments"
+        echo "usage: $0 <stansa>               -- try yqls to list stanza list "
+        return 1
+    fi
+    local searchStanza=${1}
+    echo "${1}:"
+    yq r $CONFIG_YAML "$1"  | sed 's/^/   /'
+}
+#. yqclr   -- CLEAR $CONFIG_YAML
+yqclr () {
+    unset CONFIG_YAML
+}
+# -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+#.
+#. busca    -- Personal Notes Search Tool
+busca ()
+{
+    : requires - $HOME/Documents/MyNotes folder to be present;
+  echo ; echo "${CYAN}General Matches${RESET}"
+    grep -rin --color=always "${1}" "$HOME/Documents/MyNotes/dkN*.txt" | sort -t ':' -k1,1 -k2n,2 | cut -c1-256
+  echo ; echo "${CYAN}BestPractice Matches${GREEN}"
+    grep -rin "${1}" "$HOME/Documents/MyNotes/bestPract*.txt" | grep 'bestPractice' | grep -i howto | sort -t ':' -k1,1 -k2n,2
+  echo ${RESET}
+}
+# limits - other file types
+# double sort feature - sort -t "," -nk2,5 -k9 # https://www.tecmint.com/sort-command-linux/
+#. whattodo    -- Notes Search Tool - Find What to do ...
+whattodo ()
+{
+    grep -rin --color=always "\-\-.TODO" "$HOME/Documents/MyNotes/*.txt" \
+      | cut -d':' -f1 | sort \
+      | uniq -c | sort -rn
+}
+#. cleartodo    -- Notes Search Tool - purges old todo labels
+cleartodo ()
+{
+    if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+        echo "Usage: cleartodo START_DATE DURATION"
+        echo "START_DATE: The date to start from, in YYYY-MM-DD format."
+        echo "DURATION: The number of days after the start date."
+        echo "All TODO items in notes modified within this date range will be marked as SKIP."
+        return 0
+    fi
+    local start_date="$1"
+    local duration="$2"
+    local directory="$HOME/Documents/MyNotes"
+
+    if [[ -z "$start_date" || -z "$duration" ]]; then
+        echo "${RED}ERROR: Both START_DATE and DURATION are required.${RESET}"
+        cleartodo --help
+        return 1
+    fi
+
+    # Calculate end date based on duration
+    # Using DATE_COMMAND for portability between Linux and macOS if setup correctly (though we target Linux now)
+    local end_date=$($DATE_COMMAND -d "${start_date} + ${duration} days" "+%Y-%m-%d")
+
+    # Convert dates to timestamps for comparison
+    local start_date_ts=$($DATE_COMMAND -d "${start_date}" "+%s")
+    local end_date_ts=$($DATE_COMMAND -d "${end_date}" "+%s")
+
+    echo "Changing TODO to SKIP from $start_date to $end_date in $directory..."
+    find "$directory" -name "*.txt" -print0 | while IFS= read -r -d '' file; do
+        # Check if the file exists and is readable
+        if [[ -f "$file" ]] && [[ -r "$file" ]]; then
+            # Extract date from the filename using regex
+            if [[ $(basename "$file") =~ .*-([0-9]{4}-[0-9]{2}-[0-9]{2}).* ]]; then
+                local file_date_str="${BASH_REMATCH[1]}"
+                local file_date_ts=$($DATE_COMMAND -d "${file_date_str}" "+%s")
+                # Check if the file date is within the specified range
+                if [[ "${file_date_ts}" -ge "${start_date_ts}" ]] && [[ "${file_date_ts}" -le "${end_date_ts}" ]]; then
+                    echo "Processing ${file}..."
+                    # Use awk to perform a case-insensitive substitution and sponge for atomic write
+                    awk '{IGNORECASE=1; gsub(/todo/, "SKIP"); print }' "${file}" | sponge "${file}"
+                fi
+            else
+                echo "Warning: Could not extract date from file name ${file}"
+            fi
+        else
+            echo "Warning: Could not read file ${file}"
+        fi
+    done
+}
+#. bang    -- create RANDOM uuid - used as Doc Anchors
+bang () {
+    echo "#bang: $UUID_COMMAND" # Use the UUID_COMMAND from get_local_os
+}
+#. findbang    -- Notes Search Tool - Find BANGs
+findbang () {
+    grep -rin --color=always "#BANG:" "$HOME/Documents/MyNotes/*.txt" | sort
+}
+#. pubip    -- Curl hack for PUBLIC IP ADDRESS
+pubip () {
+    curl -L ifconfig.me; echo
+}
+#! whereip ~ Finds geolocation for given ip address
+#h whereip ~ usage: whereip           # requires 1 parameters (ip address)
+whereip ()
+{
+    if (( $# < 1 )); then
+        echo -e "\n${RED} usage: Needs at least one argument; IP Address${RESET}\n";
+        return 1;
+    fi;
+    curl -s https://pinocate.com/"${1}"/json/ | jq .
+}
+# https://ipfind.io/signup or https://pinocate.com/
+#! whoip ~ whoip Search wellKnown IP Address
+#h whoip ~ usage: whoip           # requires 1 parameters (ip address)
+whoip () {
+  local SEARCHSTRNG=${1:-.}
+  cat ~/work/wellknown.Ref/wellknownIP.dbx | grep "${SEARCHSTRNG}"
+}
+#. netcalc   -- Calculate Nets, Broadcast and Useble IP addresses
+netcalc () {
+    local ip=$1
+    local mask=$2
+
+    if [[ -z "$ip" || -z "$mask" ]]; then
+        echo "${RED}Usage: netcalc <IP_Address> <Netmask>${RESET}"
+        return 1
+    fi
+
+    IFS=. read -r i1 i2 i3 i4 <<< "$ip"
+    IFS=. read -r m1 m2 m3 m4 <<< "$mask"
+
+    # Basic validation for IP and mask components
+    if ! [[ "$i1" =~ ^[0-9]+$ && "$i2" =~ ^[0-9]+$ && "$i3" =~ ^[0-9]+$ && "$i4" =~ ^[0-9]+$ && \
+            "$m1" =~ ^[0-9]+$ && "$m2" =~ ^[0-9]+$ && "$m3" =~ ^[0-9]+$ && "$m4" =~ ^[0-9]+$ ]]; then
+        echo "${RED}Error: Invalid IP address or netmask format. Please use dot-decimal notation.${RESET}"
+        return 1
+    fi
+
+    # Removed the call to _azgetsubNAME as it was undefined.
+    echo "Network Calculation for ${ip} with netmask ${mask}"
+    echo -n " network: $((i1 & m1)).$((i2 & m2)).$((i3 & m3)).$((i4 & m4))"
+    echo -n " - broadcast: $((i1 & m1 | (255-m1))).$((i2 & m2 | (255-m2))).$((i3 & m3 | (255-m3))).$((i4 & m4 | (255-m4)))"
+    echo -n " // first IP: $((i1 & m1)).$((i2 & m2)).$((i3 & m3)).$(((i4 & m4)+1))"
+    echo " - last IP: $((i1 & m1 | (255-m1))).$((i2 & m2 | (255-m2))).$((i3 & m3 | (255-m3))).$(((i4 & m4 | (255-m4))-1))"
+    echo
+}
+# netcalc 52.254.113.128 255.255.255.240
+#. splat    -- List content of files with a file name header
+splat ()
+{
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: splat <file_pattern1> [file_pattern2]..."
+        return 1
+    fi
+
+    local patterns_found=0
+    for pattern in "$@"; do
+        local found_files
+        # Use -wholename for patterns with directories
+        if [[ "$pattern" == *"/"* ]]; then
+            # Using -print0 and xargs -0 for safety with filenames containing spaces
+            found_files=$(find . -type f -wholename "$pattern" -print0 2>/dev/null)
+        else
+            # Use -name for simple filenames
+            found_files=$(find . -type f -name "$pattern" -print0 2>/dev/null)
+        fi
+
+        if [[ -n "$found_files" ]]; then
+            patterns_found=1
+            # Use xargs to process files safely
+            echo "$found_files" | xargs -0 -I {} bash -c 'echo "==> {} <=="; cat "{}"'
+        fi
+    done
+
+    if [ "$patterns_found" -eq 0 ]; then
+        echo "No files found matching pattern(s)."
+        return 1
+    fi
+}
+#. gitdiff    --  compares a file in the pwd with its version in the latest git commit,
+gitdiff() {
+    # Check if a file is provided as an argument
+    if [ -z "$1" ]; then
+        echo "Usage: diff_with_latest_commit <filename>"
+        return 1
+    fi
+    # Check if the file exists in the working directory
+    if [ ! -f "$1" ]; then
+        echo "File '$1' does not exist in the current directory."
+        return 1
+    fi
+    # Perform a diff between the working directory file and the latest commit
+    git diff HEAD -- "$1"
+}
+#. splooge    -- List content of files recursively - good for chatgpt
+splooge () {
+    # Define the path to the filter file in the user's home directory
+    filter_file="$HOME/.splooge.filter"
+    # Check if the filter file exists, if not, instruct the user to create one
+    if [[ ! -f "$filter_file" ]]; then
+        echo "${RED}Filter file '$filter_file' not found.${RESET}"
+        echo "${YELLOW}Please create a filter file with the file extensions to exclude.${RESET}"
+        echo "${YELLOW}A sample filter file has been created with example extensions.${RESET}"
+        # Create a sample filter file
+        echo -e ".json\n.log\n.tmp\n.git/\n.terraform/\n.env" > "$filter_file"
+        echo "${YELLOW}Sample filter file created at '$filter_file'. Modify it as needed.${RESET}"
+        return 1 # Changed exit to return for function
+    fi
+    # Initialize exclusion patterns
+    local exclude_patterns=""
+    # Build exclusion patterns from the filter file
+    while IFS= read -r extension; do
+        # Skip empty lines and comments (if any)
+        [[ -z "$extension" || "$extension" =~ ^# ]] && continue
+        # Use -path for directories or -name for files
+        if [[ "$extension" == *"/" ]]; then
+            exclude_patterns="$exclude_patterns -not -path \"*$extension*\""
+        else
+            exclude_patterns="$exclude_patterns -not -name \"*$extension\""
+        fi
+    done < "$filter_file"
+
+    # Use find with -print0 and xargs -0 for safety with filenames containing spaces
+    # The eval is still needed here due to dynamic nature of exclude_patterns
+    # For greater safety, consider explicitly listing all -name arguments if the list is fixed
