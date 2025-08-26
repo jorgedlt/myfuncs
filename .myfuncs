@@ -1,409 +1,953 @@
 #!/usr/bin/env bash
-# -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
-# .myfuncs.sh # a collection of functions and aliases
-# jorge.delatorre@dematic.com - 26 Jun 2019 / 2020-12-08 / 2023-01-11
-# Updated for Linux Ubuntu 24.04 - 2024-05-15
-# -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+# =============================================================================
+# ubuntu-myfuncs.sh, a collection of Bash functions and aliases for Ubuntu 24.04
+# Author: Jorge de la Torre
+# Updated for Ubuntu 24.04 by converting macOS-specific parts to Linux-friendly
+# =============================================================================
 
-# --- INITIALIZATION: OS Detection, Colors, and Base Directory ---
-# Moved to the very top to ensure commands and colors are defined before any function uses them.
+# Base dir
+export BASEDIR="${HOME}"
 
-# Function to set OS-specific commands for Linux environment
-get_local_os() {
-    OS="$(uname)"
-    if [[ "$OS" == "Linux" ]]; then
-        echo "Running on Linux"
-        COPY_COMMAND="xclip -selection clipboard"
-        PASTE_COMMAND="xclip -selection clipboard -o"
-        DATE_COMMAND="date"
-        SED_COMMAND="sed"
-        FOLD_COMMAND="fold"
-        SHUF_COMMAND="shuf" # GNU shuf
-        UUID_COMMAND="/usr/bin/uuidgen" # Ubuntu default uuidgen
-    else
-        echo "Unknown operating system. Defaulting to Linux commands (xclip, date, sed)."
-        COPY_COMMAND="xclip -selection clipboard"
-        PASTE_COMMAND="xclip -selection clipboard -o"
-        DATE_COMMAND="date"
-        SED_COMMAND="sed"
-        FOLD_COMMAND="fold"
-        SHUF_COMMAND="shuf"
-        UUID_COMMAND="/usr/bin/uuidgen"
-    fi
-    # Check if xclip is installed, if not, warn the user
-    if ! command -v xclip &> /dev/null; then
-        echo "${YELLOW}WARNING: xclip is not installed. Clipboard functions (clip, clop, etc.) will not work.${RESET}"
-        echo "${YELLOW}Please install it: sudo apt install xclip${RESET}"
-    fi
-    # Check if yq is installed
-    if ! command -v yq &> /dev/null; then
-        echo "${YELLOW}WARNING: yq is not installed. YAML functions (yqls, ycat, y2j, yqshow) will not work.${RESET}"
-        echo "${YELLOW}Please install it: sudo snap install yq (or similar for your system)${RESET}"
-    fi
-    # Check if jq is installed
-    if ! command -v jq &> /dev/dev/null; then
-        echo "${YELLOW}WARNING: jq is not installed. JSON functions (jcat, jqkeys, jqcheck, jqpaths, y2j) will not work.${RESET}"
-        echo "${YELLOW}Please install it: sudo apt install jq${RESET}"
-    fi
-    # Check for ccrypt and basez
-    if ! command -v ccrypt &> /dev/null || ! command -v base32 &> /dev/null; then
-        echo "${YELLOW}WARNING: ccrypt or base32 (from basez package) not found. Encryption functions (clpcry, nocry) may not work.${RESET}"
-        echo "${YELLOW}Please install: sudo apt install ccrypt basez${RESET}"
-    fi
-    # Check for neofetch (used in 'x')
-    if ! command -v neofetch &> /dev/null; then
-        echo "${YELLOW}WARNING: neofetch is not installed. 'x' command output will be incomplete.${RESET}"
-        echo "${YELLOW}Please install: sudo apt install neofetch${RESET}"
-    fi
-    # Check for tree (used in aliases)
-    if ! command -v tree &> /dev/null; then
-        echo "${YELLOW}WARNING: tree is not installed. 'tree1', 'tree2' aliases will not work.${RESET}"
-        echo "${YELLOW}Please install: sudo apt install tree${RESET}"
-    fi
-    # Check for moreutils (for sponge)
-    if ! command -v sponge &> /dev/null; then
-        echo "${YELLOW}WARNING: sponge (from moreutils) is not installed. Some in-place file modifications might be less safe.${RESET}"
-        echo "${YELLOW}Please install: sudo apt install moreutils${RESET}"
-    fi
+# -----------------------------------------------------------------------------
+# Dependencies detection and helpers
+# -----------------------------------------------------------------------------
+
+# Prefer Wayland clipboard if available, fallback to X11, else no-op with warning
+_detect_clipboard() {
+  if command -v wl-copy >/dev/null 2>&1 && command -v wl-paste >/dev/null 2>&1; then
+    COPY_COMMAND="wl-copy"
+    PASTE_COMMAND="wl-paste"
+  elif command -v xclip >/dev/null 2>&1; then
+    COPY_COMMAND="xclip -selection clipboard"
+    PASTE_COMMAND="xclip -selection clipboard -o"
+  elif command -v xsel >/dev/null 2>&1; then
+    COPY_COMMAND="xsel --clipboard --input"
+    PASTE_COMMAND="xsel --clipboard --output"
+  else
+    COPY_COMMAND="cat >/dev/null"    # no clipboard, swallow input
+    PASTE_COMMAND="cat"              # best effort
+    echo "Clipboard tools not found. Install wl-clipboard or xclip or xsel." 1>&2
+  fi
 }
 
-# Function to set terminal colors
+_detect_fold() {
+  if command -v fold >/dev/null 2>&1; then
+    FOLD_COMMAND="fold"
+  else
+    FOLD_COMMAND="cat"
+  fi
+}
+
+_detect_sed() {
+  if command -v sed >/dev/null 2>&1; then
+    SED_COMMAND="sed"
+  else
+    SED_COMMAND="cat"
+  fi
+}
+
+_detect_date() {
+  if command -v date >/dev/null 2>&1; then
+    DATE_COMMAND="date"
+  else
+    echo "date command not found. Many functions will not work." 1>&2
+    DATE_COMMAND="date"
+  fi
+}
+
+_detect_uuid() {
+  if command -v uuidgen >/dev/null 2>&1; then
+    UUID_COMMAND="uuidgen"
+  else
+    UUID_COMMAND=""
+    echo "uuidgen not found. Install util-linux." 1>&2
+  fi
+}
+
+# Init detection
+_detect_clipboard
+_detect_fold
+_detect_sed
+_detect_date
+_detect_uuid
+
+# -----------------------------------------------------------------------------
+# Terminal colors
+# -----------------------------------------------------------------------------
 set_colors() {
-    export BLACK=$(tput setaf 0 2>/dev/null)
-    export RED=$(tput setaf 1 2>/dev/null)
-    export GREEN=$(tput setaf 2 2>/dev/null)
-    export YELLOW=$(tput setaf 3 2>/dev/null)
-    export BLUE=$(tput setaf 4 2>/dev/null)
-    export MAGENTA=$(tput setaf 5 2>/dev/null)
-    export CYAN=$(tput setaf 6 2>/dev/null)
-    export WHITE=$(tput setaf 7 2>/dev/null)
-    export GRAY=$(tput setaf 8 2>/dev/null)
-    export BOLD=$(tput bold 2>/dev/null)
-    export REVERSE=$(tput rev 2>/dev/null)
-    export RESET=$(tput sgr0 2>/dev/null)
-    export NC=$(tput sgr0 2>/dev/null)
+  export BLACK=$(tput setaf 0 2>/dev/null || printf '')
+  export RED=$(tput setaf 1 2>/dev/null || printf '')
+  export GREEN=$(tput setaf 2 2>/dev/null || printf '')
+  export YELLOW=$(tput setaf 3 2>/dev/null || printf '')
+  export BLUE=$(tput setaf 4 2>/dev/null || printf '')
+  export MAGENTA=$(tput setaf 5 2>/dev/null || printf '')
+  export CYAN=$(tput setaf 6 2>/dev/null || printf '')
+  export WHITE=$(tput setaf 7 2>/dev/null || printf '')
+  export GRAY=$(tput setaf 8 2>/dev/null || printf '')
+  export BOLD=$(tput bold 2>/dev/null || printf '')
+  export REVERSE=$(tput rev 2>/dev/null || printf '')
+  export RESET=$(tput sgr0 2>/dev/null || printf '')
+  export NC="${RESET}"
 }
-
-# Call initialization functions
-get_local_os
 set_colors
 
-# Verify colors after setting them (optional for everyday use, good for debugging)
-function verify_colors() {
-    local all_colors_set=true
-    for color in BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE GRAY BOLD REVERSE RESET NC; do
-      if [ -z "$(eval echo \$$color)" ]; then
-        echo "Color variable $color is not set."
-        all_colors_set=false
-      fi
-    done
-    $all_colors_set && echo "All color variables are correctly set." || echo "Some color variables are missing."
+mycolors() {
+  for color in BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE GRAY; do
+    eval echo \${$color} XXXXX $color XXXXX \$RESET
+  done
+  echo "Use set_colors to initialize colors in new shells."
 }
-verify_colors # Called for initial setup, can be commented out after verification
 
-export BASEDIR="$HOME" # Use $HOME for consistency across Linux distributions
-
-# -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
-#.
-#. yqls     -- LIST possible headers to show in $CONFIG_YAML
-yqls () {
-    echo $($DATE_COMMAND | grep 'CONFIG_YAML'); echo # Simplified grep
-    yq r $CONFIG_YAML | grep ^[a-z] | tr -d ':' | sed 's/^/     /'
-}
-#. ycat ~ yaml cat
-#h ycat ~ usage: yqcat foofile.yaml
-ycat () {
-  declare i=${@:-$(</dev/stdin)}
-  if [ -p /dev/stdin ]; then # If input is from pipe
-      yq r /dev/stdin
-  elif [ -f "$i" ]; then # If input is a file
-      yq r "$i"
-  else
-      echo "${RED}Error: No YAML input provided or file not found.${RESET}"
-      return 1
-  fi
-}
-#. jcat ~ json cat
-#h jcat ~ usage: jcat foofile.json
-jcat () {
-  declare i=${@:-$(</dev/stdin)}
-  if [ -p /dev/stdin ]; then # If input is from pipe
-      cat /dev/stdin | jq .
-  elif [ -f "$i" ]; then # If input is a file
-      cat "$i" | jq .
-  else
-      echo "${RED}Error: No JSON input provided or file not found.${RESET}"
-      return 1
-  fi
-}
-#. jqkeys       -- JQ parser, from PIPE show json keys
-jqkeys () {
-  local input="$([[ -p /dev/stdin ]] && cat - || echo "$@")"
-  [[ -n "$input" ]] && echo "$input" | jq '.|keys'
-  : MyFuncs : jqkeys   -- JQ parser, from PIPE show json keys
-}
-#. jqcheck   -- JQ checker, from PIPE shows if JSON is valid
-jqcheck ()
-{
-    local FILE2VALIDATE=${1}
-
-    if cat "${FILE2VALIDATE}" | jq . > /dev/null 2>&1; then # Redirect stderr to dev/null
-        printf '%s\n' "${GREEN}PASSED: JSON file [ ${CYAN}${FILE2VALIDATE}${GREEN} ] is vaild${RESET}"
-    else
-        printf '%s\n' "${RED}ERROR: JSON file [ ${CYAN}${FILE2VALIDATE}${RED} ] is NOT vaild${RESET}"
+verify_colors() {
+  local ok=true
+  for c in BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE GRAY BOLD REVERSE RESET NC; do
+    if [ -z "$(eval echo \$$c)" ]; then
+      echo "Color variable $c is not set."
+      ok=false
     fi
-    : MyFuncs : jqcheck   -- JQ checker, from PIPE show if JSON is valid
+  done
+  $ok && echo "All color variables are set." || echo "Some color variables are missing."
 }
-#. jqpaths   -- JQ PATHS, from PIPE shows all JSON paths
-jqpaths ()
-{
-    local input="$([[ -p /dev/stdin ]] && cat - || echo "$@")";
-    [[ -n "$input" ]] && echo "$input" | jq 'select(objects)|=[.] | map( paths(scalars) ) | map( map(select(numbers)="[]") | join(".")) | unique'
-    : MyFuncs : jqpaths   -- JQ PATHS, from PIPE shows all JSON paths
+
+# -----------------------------------------------------------------------------
+# YAML and JSON helpers (yq v4+, jq)
+# -----------------------------------------------------------------------------
+
+# Print CONFIG_YAML env and top-level keys
+yqls() {
+  if [ -z "${CONFIG_YAML}" ]; then
+    echo "CONFIG_YAML is not set."
+    return 1
+  fi
+  echo "CONFIG_YAML=${CONFIG_YAML}"
+  if ! command -v yq >/dev/null 2>&1; then
+    echo "yq not found. Install yq (v4)." 1>&2
+    return 1
+  fi
+  yq eval 'keys | .[]' "${CONFIG_YAML}" | sed 's/^/     /'
 }
-#. jqjoke  -- Generates a sample JSON stanza for ramdon testing, etc
-jqjoke ()
-{
-  curl -s -H "Accept: application/json" https://icanhazdadjoke.com/ | jq .
+
+# ycat, yaml cat
+ycat() {
+  if ! command -v yq >/dev/null 2>&1; then
+    echo "yq not found. Install yq (v4)." 1>&2
+    return 1
+  fi
+  local i="${1:-/dev/stdin}"
+  yq eval '.' "$i"
 }
-#. y2j ~ yaml to json convert
-#h y2j ~ usage: y2j foofile.yaml  -- or y2j foofile.yaml > foofile.json
-y2j () {
-  declare i=${@:-$(</dev/stdin)}
-  if [ -p /dev/stdin ] || [ -f "$i" ]; then
-      # Use a temporary file for piped input to ensure python can read it reliably,
-      # or directly pipe if using a file argument with cat
-      local input_content
-      if [ -p /dev/stdin ]; then
-          input_content=$(cat /dev/stdin)
+
+# jcat, json cat
+jcat() {
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "jq not found." 1>&2
+    return 1
+  fi
+  local i="${1:-/dev/stdin}"
+  jq . < "$i"
+}
+
+# jqkeys, from pipe or args show json keys
+jqkeys() {
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "jq not found." 1>&2
+    return 1
+  fi
+  local input
+  input="$([[ -p /dev/stdin ]] && cat - || printf "%s" "$*")"
+  [ -n "$input" ] && echo "$input" | jq 'keys'
+}
+
+# jqcheck, validate JSON file
+jqcheck() {
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "jq not found." 1>&2
+    return 1
+  fi
+  local f="$1"
+  if [ -z "$f" ]; then
+    echo "Usage: jqcheck file.json"
+    return 1
+  fi
+  if jq . "$f" >/dev/null 2>&1; then
+    printf '%s\n' "${GREEN}PASSED: JSON file [ ${CYAN}${f}${GREEN} ] is valid${RESET}"
+  else
+    printf '%s\n' "${RED}ERROR: JSON file [ ${CYAN}${f}${RED} ] is NOT valid${RESET}"
+  fi
+}
+
+# jqpaths, list all scalar JSON paths
+jqpaths() {
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "jq not found." 1>&2
+    return 1
+  fi
+  local input
+  input="$([[ -p /dev/stdin ]] && cat - || printf "%s" "$*")"
+  [ -n "$input" ] && echo "$input" | jq 'paths(scalars) | map(tostring) | join(".")' -c | sort -u
+}
+
+# jqjoke, fetch sample JSON
+jqjoke() {
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "jq not found." 1>&2
+    return 1
+  fi
+  curl -fsSL -H "Accept: application/json" https://icanhazdadjoke.com/ | jq .
+}
+
+# y2j, yaml to json
+y2j() {
+  if ! command -v yq >/dev/null 2>&1; then
+    echo "yq not found. Install yq (v4)." 1>&2
+    return 1
+  fi
+  local i="${1:-/dev/stdin}"
+  yq eval -o=json '.' "$i" | jq .
+}
+
+# yqshow, show stanza from CONFIG_YAML
+yqshow() {
+  if [ $# -lt 1 ]; then
+    echo "Usage: yqshow <path>"
+    return 1
+  fi
+  if [ -z "${CONFIG_YAML}" ]; then
+    echo "CONFIG_YAML is not set."
+    return 1
+  fi
+  if ! command -v yq >/dev/null 2>&1; then
+    echo "yq not found." 1>&2
+    return 1
+  fi
+  local path="$1"
+  echo "${path}:"
+  yq eval ".$path" "${CONFIG_YAML}" | sed 's/^/   /'
+}
+
+yqclr() { unset CONFIG_YAML; }
+
+# -----------------------------------------------------------------------------
+# Notes search utilities
+# -----------------------------------------------------------------------------
+busca() {
+  local dir="$HOME/Documents/MyNotes"
+  echo
+  echo "${CYAN}General Matches${RESET}"
+  grep -rin --color=always "${1}" "$dir"/dkN*.txt 2>/dev/null \
+    | sort -t ':' -k1,1 -k2,2n | cut -c1-256
+  echo
+  echo "${CYAN}BestPractice Matches${GREEN}"
+  grep -rin "${1}" "$dir"/bestPract*.txt 2>/dev/null | grep -i howto \
+    | sort -t ':' -k1,1 -k2,2n
+  echo "${RESET}"
+}
+
+whattodo() {
+  grep -rin --color=always "\-\-.TODO" "$HOME/Documents/MyNotes"/*.txt 2>/dev/null \
+    | cut -d':' -f1 | sort | uniq -c | sort -rn
+}
+
+cleartodo() {
+  if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    echo "Usage: cleartodo START_DATE DURATION"
+    echo "START_DATE format YYYY-MM-DD, DURATION is days."
+    return
+  fi
+  local start_date="$1"
+  local duration="$2"
+  local directory="$HOME/Documents/MyNotes"
+  local end_date
+  end_date=$($DATE_COMMAND -d "${start_date} +${duration} days" "+%Y-%m-%d")
+  local start_ts end_ts
+  start_ts=$($DATE_COMMAND -d "${start_date}" "+%s")
+  end_ts=$($DATE_COMMAND -d "${end_date}" "+%s")
+  echo "Changing TODO to SKIP from $start_date to $end_date in $directory..."
+  find "$directory" -name "*.txt" -print0 | while IFS= read -r -d '' file; do
+    if [[ -f "$file" && -r "$file" ]]; then
+      if [[ $(basename "$file") =~ .*-([0-9]{4}-[0-9]{2}-[0-9]{2}).* ]]; then
+        local file_date_str="${BASH_REMATCH[1]}"
+        local file_ts
+        file_ts=$($DATE_COMMAND -d "${file_date_str}" "+%s")
+        if [[ "${file_ts}" -ge "${start_ts}" && "${file_ts}" -le "${end_ts}" ]]; then
+          echo "Processing ${file}..."
+          awk '{IGNORECASE=1; gsub(/todo/, "SKIP"); print }' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
+        fi
       else
-          input_content=$(cat "$i")
+        echo "Warning: Could not extract date from file name ${file}"
       fi
-      python3 -c 'import sys, yaml, json; json.dump(yaml.safe_load(sys.stdin), sys.stdout, indent=4)' <<< "$input_content" | jq .
+    else
+      echo "Warning: Could not read file ${file}"
+    fi
+  done
+}
+
+bang() {
+  if [ -n "$UUID_COMMAND" ]; then
+    echo "#bang: $($UUID_COMMAND)"
   else
-      echo "${RED}Error: No YAML input provided or file not found.${RESET}"
-      return 1
+    echo "#bang: $(date +%s)-$$"
   fi
 }
-#. yqshow   -- SHOW requested stansa from $CONFIG_YAML
-yqshow () {
-    if (( $# < 1 )); then
-        echo "ERROR usage: Needs at least one arguments"
-        echo "usage: $0 <stansa>               -- try yqls to list stanza list "
-        return 1
-    fi
-    local searchStanza=${1}
-    echo "${1}:"
-    yq r $CONFIG_YAML "$1"  | sed 's/^/   /'
-}
-#. yqclr   -- CLEAR $CONFIG_YAML
-yqclr () {
-    unset CONFIG_YAML
-}
-# -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
-#.
-#. busca    -- Personal Notes Search Tool
-busca ()
-{
-    : requires - $HOME/Documents/MyNotes folder to be present;
-  echo ; echo "${CYAN}General Matches${RESET}"
-    grep -rin --color=always "${1}" "$HOME/Documents/MyNotes/dkN*.txt" | sort -t ':' -k1,1 -k2n,2 | cut -c1-256
-  echo ; echo "${CYAN}BestPractice Matches${GREEN}"
-    grep -rin "${1}" "$HOME/Documents/MyNotes/bestPract*.txt" | grep 'bestPractice' | grep -i howto | sort -t ':' -k1,1 -k2n,2
-  echo ${RESET}
-}
-# limits - other file types
-# double sort feature - sort -t "," -nk2,5 -k9 # https://www.tecmint.com/sort-command-linux/
-#. whattodo    -- Notes Search Tool - Find What to do ...
-whattodo ()
-{
-    grep -rin --color=always "\-\-.TODO" "$HOME/Documents/MyNotes/*.txt" \
-      | cut -d':' -f1 | sort \
-      | uniq -c | sort -rn
-}
-#. cleartodo    -- Notes Search Tool - purges old todo labels
-cleartodo ()
-{
-    if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
-        echo "Usage: cleartodo START_DATE DURATION"
-        echo "START_DATE: The date to start from, in YYYY-MM-DD format."
-        echo "DURATION: The number of days after the start date."
-        echo "All TODO items in notes modified within this date range will be marked as SKIP."
-        return 0
-    fi
-    local start_date="$1"
-    local duration="$2"
-    local directory="$HOME/Documents/MyNotes"
 
-    if [[ -z "$start_date" || -z "$duration" ]]; then
-        echo "${RED}ERROR: Both START_DATE and DURATION are required.${RESET}"
-        cleartodo --help
-        return 1
-    fi
+findbang() {
+  grep -rin --color=always "#BANG:" "$HOME/Documents/MyNotes"/*.txt 2>/dev/null | sort
+}
 
-    # Calculate end date based on duration
-    # Using DATE_COMMAND for portability between Linux and macOS if setup correctly (though we target Linux now)
-    local end_date=$($DATE_COMMAND -d "${start_date} + ${duration} days" "+%Y-%m-%d")
+pubip() { curl -fsSL ifconfig.me; echo; }
 
-    # Convert dates to timestamps for comparison
-    local start_date_ts=$($DATE_COMMAND -d "${start_date}" "+%s")
-    local end_date_ts=$($DATE_COMMAND -d "${end_date}" "+%s")
+whereip() {
+  if (( $# < 1 )); then
+    echo "Usage: whereip <ip>"
+    return 1
+  fi
+  curl -fsSL "https://pinocate.com/$1/json/" | jq .
+}
 
-    echo "Changing TODO to SKIP from $start_date to $end_date in $directory..."
-    find "$directory" -name "*.txt" -print0 | while IFS= read -r -d '' file; do
-        # Check if the file exists and is readable
-        if [[ -f "$file" ]] && [[ -r "$file" ]]; then
-            # Extract date from the filename using regex
-            if [[ $(basename "$file") =~ .*-([0-9]{4}-[0-9]{2}-[0-9]{2}).* ]]; then
-                local file_date_str="${BASH_REMATCH[1]}"
-                local file_date_ts=$($DATE_COMMAND -d "${file_date_str}" "+%s")
-                # Check if the file date is within the specified range
-                if [[ "${file_date_ts}" -ge "${start_date_ts}" ]] && [[ "${file_date_ts}" -le "${end_date_ts}" ]]; then
-                    echo "Processing ${file}..."
-                    # Use awk to perform a case-insensitive substitution and sponge for atomic write
-                    awk '{IGNORECASE=1; gsub(/todo/, "SKIP"); print }' "${file}" | sponge "${file}"
-                fi
-            else
-                echo "Warning: Could not extract date from file name ${file}"
-            fi
-        else
-            echo "Warning: Could not read file ${file}"
-        fi
-    done
-}
-#. bang    -- create RANDOM uuid - used as Doc Anchors
-bang () {
-    echo "#bang: $UUID_COMMAND" # Use the UUID_COMMAND from get_local_os
-}
-#. findbang    -- Notes Search Tool - Find BANGs
-findbang () {
-    grep -rin --color=always "#BANG:" "$HOME/Documents/MyNotes/*.txt" | sort
-}
-#. pubip    -- Curl hack for PUBLIC IP ADDRESS
-pubip () {
-    curl -L ifconfig.me; echo
-}
-#! whereip ~ Finds geolocation for given ip address
-#h whereip ~ usage: whereip           # requires 1 parameters (ip address)
-whereip ()
-{
-    if (( $# < 1 )); then
-        echo -e "\n${RED} usage: Needs at least one argument; IP Address${RESET}\n";
-        return 1;
-    fi;
-    curl -s https://pinocate.com/"${1}"/json/ | jq .
-}
-# https://ipfind.io/signup or https://pinocate.com/
-#! whoip ~ whoip Search wellKnown IP Address
-#h whoip ~ usage: whoip           # requires 1 parameters (ip address)
-whoip () {
+whoip() {
   local SEARCHSTRNG=${1:-.}
-  cat ~/work/wellknown.Ref/wellknownIP.dbx | grep "${SEARCHSTRNG}"
+  grep "${SEARCHSTRNG}" "$HOME/work/wellknown.Ref/wellknownIP.dbx"
 }
-#. netcalc   -- Calculate Nets, Broadcast and Useble IP addresses
-netcalc () {
-    local ip=$1
-    local mask=$2
 
-    if [[ -z "$ip" || -z "$mask" ]]; then
-        echo "${RED}Usage: netcalc <IP_Address> <Netmask>${RESET}"
-        return 1
-    fi
-
-    IFS=. read -r i1 i2 i3 i4 <<< "$ip"
-    IFS=. read -r m1 m2 m3 m4 <<< "$mask"
-
-    # Basic validation for IP and mask components
-    if ! [[ "$i1" =~ ^[0-9]+$ && "$i2" =~ ^[0-9]+$ && "$i3" =~ ^[0-9]+$ && "$i4" =~ ^[0-9]+$ && \
-            "$m1" =~ ^[0-9]+$ && "$m2" =~ ^[0-9]+$ && "$m3" =~ ^[0-9]+$ && "$m4" =~ ^[0-9]+$ ]]; then
-        echo "${RED}Error: Invalid IP address or netmask format. Please use dot-decimal notation.${RESET}"
-        return 1
-    fi
-
-    # Removed the call to _azgetsubNAME as it was undefined.
-    echo "Network Calculation for ${ip} with netmask ${mask}"
-    echo -n " network: $((i1 & m1)).$((i2 & m2)).$((i3 & m3)).$((i4 & m4))"
-    echo -n " - broadcast: $((i1 & m1 | (255-m1))).$((i2 & m2 | (255-m2))).$((i3 & m3 | (255-m3))).$((i4 & m4 | (255-m4)))"
-    echo -n " // first IP: $((i1 & m1)).$((i2 & m2)).$((i3 & m3)).$(((i4 & m4)+1))"
-    echo " - last IP: $((i1 & m1 | (255-m1))).$((i2 & m2 | (255-m2))).$((i3 & m3 | (255-m3))).$(((i4 & m4 | (255-m4))-1))"
-    echo
+# -----------------------------------------------------------------------------
+# Networking helpers
+# -----------------------------------------------------------------------------
+netcalc() {
+  local ip="$1" mask="$2"
+  if [ -z "$ip" ] || [ -z "$mask" ]; then
+    echo "Usage: netcalc <ip> <mask>"
+    return 1
+  fi
+  IFS=. read -r i1 i2 i3 i4 <<< "$ip"
+  IFS=. read -r m1 m2 m3 m4 <<< "$mask"
+  echo -n "network: $((i1 & m1)).$((i2 & m2)).$((i3 & m3)).$((i4 & m4))"
+  echo -n " - broadcast: $((i1 & m1 | 255-m1)).$((i2 & m2 | 255-m2)).$((i3 & m3 | 255-m3)).$((i4 & m4 | 255-m4))"
+  echo -n " // first IP: $((i1 & m1)).$((i2 & m2)).$((i3 & m3)).$(((i4 & m4)+1))"
+  echo " - last IP: $((i1 & m1 | 255-m1)).$((i2 & m2 | 255-m2)).$((i3 & m3 | 255-m3)).$(((i4 & m4)-1))"
+  echo
 }
-# netcalc 52.254.113.128 255.255.255.240
-#. splat    -- List content of files with a file name header
-splat ()
-{
-    if [ "$#" -eq 0 ]; then
-        echo "Usage: splat <file_pattern1> [file_pattern2]..."
-        return 1
+
+# -----------------------------------------------------------------------------
+# File spellers
+# -----------------------------------------------------------------------------
+splat() {
+  if [ "$#" -eq 0 ]; then
+    echo "No files matched!"
+    return 1
+  fi
+  local matched_files=()
+  for pattern in "$@"; do
+    local files
+    if [[ "$pattern" == *"/"* ]]; then
+      files=$(find . -type f -path "./$pattern" 2>/dev/null)
+    else
+      files=$(find . -type f -name "$pattern" 2>/dev/null)
     fi
-
-    local patterns_found=0
-    for pattern in "$@"; do
-        local found_files
-        # Use -wholename for patterns with directories
-        if [[ "$pattern" == *"/"* ]]; then
-            # Using -print0 and xargs -0 for safety with filenames containing spaces
-            found_files=$(find . -type f -wholename "$pattern" -print0 2>/dev/null)
-        else
-            # Use -name for simple filenames
-            found_files=$(find . -type f -name "$pattern" -print0 2>/dev/null)
-        fi
-
-        if [[ -n "$found_files" ]]; then
-            patterns_found=1
-            # Use xargs to process files safely
-            echo "$found_files" | xargs -0 -I {} bash -c 'echo "==> {} <=="; cat "{}"'
-        fi
-    done
-
-    if [ "$patterns_found" -eq 0 ]; then
-        echo "No files found matching pattern(s)."
-        return 1
+    while IFS= read -r file; do
+      matched_files+=("$file")
+    done <<< "$files"
+  done
+  if [ "${#matched_files[@]}" -eq 0 ]; then
+    echo "No files found matching pattern(s)."
+    return 1
+  fi
+  for file in "${matched_files[@]}"; do
+    if [ -f "$file" ]; then
+      echo "==> $file <=="
+      cat "$file"
+    else
+      echo "No files found matching pattern."
     fi
+  done
 }
-#. gitdiff    --  compares a file in the pwd with its version in the latest git commit,
+
 gitdiff() {
-    # Check if a file is provided as an argument
-    if [ -z "$1" ]; then
-        echo "Usage: diff_with_latest_commit <filename>"
-        return 1
-    fi
-    # Check if the file exists in the working directory
-    if [ ! -f "$1" ]; then
-        echo "File '$1' does not exist in the current directory."
-        return 1
-    fi
-    # Perform a diff between the working directory file and the latest commit
-    git diff HEAD -- "$1"
+  if [ -z "$1" ]; then
+    echo "Usage: gitdiff <filename>"
+    return 1
+  fi
+  if [ ! -f "$1" ]; then
+    echo "File '$1' does not exist in the current directory."
+    return 1
+  fi
+  git diff HEAD -- "$1"
 }
-#. splooge    -- List content of files recursively - good for chatgpt
-splooge () {
-    # Define the path to the filter file in the user's home directory
-    filter_file="$HOME/.splooge.filter"
-    # Check if the filter file exists, if not, instruct the user to create one
-    if [[ ! -f "$filter_file" ]]; then
-        echo "${RED}Filter file '$filter_file' not found.${RESET}"
-        echo "${YELLOW}Please create a filter file with the file extensions to exclude.${RESET}"
-        echo "${YELLOW}A sample filter file has been created with example extensions.${RESET}"
-        # Create a sample filter file
-        echo -e ".json\n.log\n.tmp\n.git/\n.terraform/\n.env" > "$filter_file"
-        echo "${YELLOW}Sample filter file created at '$filter_file'. Modify it as needed.${RESET}"
-        return 1 # Changed exit to return for function
-    fi
-    # Initialize exclusion patterns
-    local exclude_patterns=""
-    # Build exclusion patterns from the filter file
-    while IFS= read -r extension; do
-        # Skip empty lines and comments (if any)
-        [[ -z "$extension" || "$extension" =~ ^# ]] && continue
-        # Use -path for directories or -name for files
-        if [[ "$extension" == *"/" ]]; then
-            exclude_patterns="$exclude_patterns -not -path \"*$extension*\""
-        else
-            exclude_patterns="$exclude_patterns -not -name \"*$extension\""
-        fi
-    done < "$filter_file"
 
-    # Use find with -print0 and xargs -0 for safety with filenames containing spaces
-    # The eval is still needed here due to dynamic nature of exclude_patterns
-    # For greater safety, consider explicitly listing all -name arguments if the list is fixed
+splooge() {
+  local filter_file="$HOME/.splooge.filter"
+  if [[ ! -f "$filter_file" ]]; then
+    echo "Filter file '$filter_file' not found."
+    echo -e ".json\n.log\n.tmp" > "$filter_file"
+    echo "Sample filter file created at '$filter_file'. Modify it as needed."
+    return 1
+  fi
+  local exclude_patterns=""
+  while IFS= read -r extension; do
+    [[ -z "$extension" || "$extension" =~ ^# ]] && continue
+    exclude_patterns="$exclude_patterns ! -name '*$extension'"
+  done < "$filter_file"
+  eval "find \"${1:-.}\" -type f $exclude_patterns" | while read -r file; do
+    echo "==> $file <=="
+    cat "$file"
+  done
+}
+
+jmpls() { grep '^Host ' ~/.ssh/config | grep -v '\*' | awk '{print $2}' | sort -u; }
+
+sshconf() { ls -l ~/.ssh; echo; [ -f ~/.ssh/config ] && cat ~/.ssh/config; }
+
+slurp() { # resource dotfiles
+  [ -f ~/.bashrc ] && source ~/.bashrc
+}
+
+wx() { curl -fsSL "https://wttr.in/${1:-?}"; }
+
+# -----------------------------------------------------------------------------
+# Time and date utilities
+# -----------------------------------------------------------------------------
+epochnow() { $DATE_COMMAND +%s; }
+
+e2h() {
+  local epochtime="${1:-$($DATE_COMMAND +%s)}"
+  $DATE_COMMAND -d "@$epochtime"
+}
+
+h2e() {
+  if (( $# < 1 )); then
+    echo "Usage: h2e \"Oct 21 1973\""
+    return 1
+  fi
+  $DATE_COMMAND -d "$*" +%s
+}
+
+utc2local() {
+  local s="$1"
+  if [ -z "$s" ]; then
+    echo "Usage: utc2local 2022-06-09T14:46:04"
+    return 1
+  fi
+  TZ="${TZ:-America/New_York}" $DATE_COMMAND -d "$s" "+%Y-%m-%d %T %Z"
+}
+
+inthepast() {
+  local days=${1:-3}
+  $DATE_COMMAND -d "-${days} days"
+}
+
+inthefuture() {
+  local days=${1:-3}
+  $DATE_COMMAND -d "+${days} days"
+}
+
+# -----------------------------------------------------------------------------
+# Clipboard and text shaping
+# -----------------------------------------------------------------------------
+clip() {
+  $PASTE_COMMAND | $FOLD_COMMAND --spaces --width="${1:-62}"; echo
+}
+
+clop() {
+  $PASTE_COMMAND | $FOLD_COMMAND --spaces --width="${1:-62}" | $COPY_COMMAND
+}
+
+clpcry() {
+  if ! command -v ccrypt >/dev/null 2>&1; then
+    echo "ccrypt not found. Install ccrypt." 1>&2
+    return 1
+  fi
+  local CRYWORD="${1:-badpassword}"
+  $PASTE_COMMAND > .clipcry.tmp
+  ccrypt --encrypt --key "${CRYWORD}" .clipcry.tmp
+  base64 < .clipcry.tmp.cpt | base32 -w 50 | sed 's/.\{5\}/& /g'
+  rm -f .clipcry.tmp*
+  echo
+}
+
+nocry() {
+  if ! command -v ccrypt >/dev/null 2>&1; then
+    echo "ccrypt not found. Install ccrypt." 1>&2
+    return 1
+  fi
+  local CRYWORD="${1:-badpassword}"
+  $PASTE_COMMAND > .clipcry.tmp.bin
+  tr -d ' ' < .clipcry.tmp.bin | base32 --decode | base64 --decode > .clipcry.tmp.cpt
+  ccrypt --decrypt --key "${CRYWORD}" .clipcry.tmp.cpt
+  cat .clipcry.tmp
+  rm -f .clipcry.tmp*
+  echo
+}
+
+xkcd() {
+  local dict="/usr/share/dict/words"
+  [ ! -f "$dict" ] && { echo "Dictionary $dict not found."; return 1; }
+  for _ in $(seq 1 32); do
+    grep -E "^[a-z]{5,8}$" "$dict" | shuf -n4 | sed 's/.*/-\u&/' | tr -d '\n' \
+      | cut -c2- | awk '{print $1}'
+  done | column
+}
+
+hl() { history | tail; }
+
+hg() {
+  if [ -z "$1" ]; then
+    echo "Usage: hg <search_string> [--all]"
+    return 1
+  fi
+  local show_all=false
+  [ "${2:-}" = "--all" ] && show_all=true
+  local result
+  result=$(history | grep -- "$1" | sed 's/^[ ]*[0-9]\+[ ]*//; s/^[ ]*//' \
+           | awk '{ $1=$1; print }' | awk '!seen[$0]++')
+  [ -z "$result" ] && { echo "No matching history entries found."; return 0; }
+  if $show_all; then
+    echo "$result"
+  else
+    echo "$result" | tac | head -n 12
+  fi
+}
+
+ones() {
+  echo -n "${CYAN}"
+  $PASTE_COMMAND | tr -s ' ' | $COPY_COMMAND
+  $PASTE_COMMAND | tr -s ' '
+  echo -n "${RESET}"
+  echo
+  echo "Cleaned-up content also copied to clipboard"
+}
+
+moos() {
+  local fromchar="${1:--}"
+  local tochar="${2:- }"
+  echo -n "${CYAN}"
+  $PASTE_COMMAND | sed "s/${fromchar}/${tochar}/g" | $COPY_COMMAND
+  $PASTE_COMMAND | sed "s/${fromchar}/${tochar}/g"
+  echo -n "${RESET}"
+  echo
+  echo "Cleaned-up content also copied to clipboard"
+}
+
+dict() { grep --color -i "${1}" /usr/share/dict/words; }
+
+txtcln() {
+  local DELIM1=${1:-'-'}
+  local DELIM2=${2:-' '}
+  $PASTE_COMMAND > .clipraw.tmp
+  tr '\012' "${DELIM2}" < .clipraw.tmp | tr "${DELIM1}" '\012'
+  rm -f .clipraw.tmp
+  echo "${RESET}"
+}
+
+mkhead() {
+  $PASTE_COMMAND | tr -s ' ' | sed 's/ / || /g' | sed -ne 's/.*/|| &/p' | sed 's/$/ ||/' | column -t
+  echo
+}
+
+mkbody() {
+  $PASTE_COMMAND | tr -s ' ' | sed 's/ / | /g' | sed -ne 's/.*/| &/p' | sed 's/$/ |/' | column -t
+  echo
+}
+
+mkgrid() {
+  local TEXTBLOB
+  TEXTBLOB="$($PASTE_COMMAND)"
+  echo "${TEXTBLOB}" | head -n 1 | tr -s ' ' | sed 's/ / || /g' | sed -ne 's/.*/|| &/p' | sed 's/$/ ||/' | column -t
+  echo "${TEXTBLOB}" | tail -n +3 | tr -s ' ' | sed 's/ / | /g' | sed -ne 's/.*/| &/p' | sed 's/$/ |/' | column -t
+  echo
+}
+
+# -----------------------------------------------------------------------------
+# Text transforms
+# -----------------------------------------------------------------------------
+lineup() {
+  local i=${*:-$(</dev/stdin)}
+  echo "$i" | tr ' ' '\012'
+}
+
+spaceout() {
+  local i=${*:-$(</dev/stdin)}
+  echo "$i" | tr '\012' ' '
+}
+
+numcat() {
+  local i=${1:-/dev/stdin}
+  nl -ba "$i"
+}
+
+coldwar() {
+  local i=${*:-$(</dev/stdin)}
+  echo "$i" | sed 's/.\{5\}/& /g'
+}
+
+letonly() {
+  local i=${*:-$(</dev/stdin)}
+  echo "$i" \
+    | tr -d '[:digit:][:punct:][:cntrl:]' \
+    | tr -d ' ' | tr -d '\012' \
+    | tr 'A-Z' 'a-z' | fold -s -w 50
+}
+
+salt() {
+  if [ -n "$UUID_COMMAND" ]; then
+    $UUID_COMMAND | cut -d'-' -f4
+  else
+    echo "$(date +%N | cut -c1-5)"
+  fi
+}
+
+fold64() {
+  local i=${*:-$(</dev/stdin)}
+  echo "$i" | fold -s -w 64
+}
+
+# -----------------------------------------------------------------------------
+# Display helpers
+# -----------------------------------------------------------------------------
+_showENV() { echo "                                    ${GRAY} $1 ${GREEN} $($2) ${RESET}"; }
+_headtext() { echo "    ${GREEN}${1}${RESET}"; }
+_headtextB(){ echo "    ${CYAN}${1}${RESET}"; }
+_subtext()  { echo "    ${GRAY}${1}${RESET}"; }
+_singleout(){ echo "    ${GRAY}${1}: [ ${GREEN}${2} ${GRAY}]"; }
+_doubleout(){ echo "    ${GRAY}${1}: [ ${GREEN}${2} ${GRAY}] ${3}: [ ${GREEN}${4} ${GRAY}]"; }
+singlewide(){ echo "    ${GRAY}$1: ${GREEN}$2 ${GRAY}"; }
+doublewide(){ echo "    ${GRAY}$1: [ ${GREEN}$2 ${GRAY}] $3: [ ${GREEN}$4 ${GRAY}]"; }
+
+_hline() {
+  local width="${1:-${COLUMNS:-$(tput cols 2>/dev/null || echo 80)}}"
+  if [[ $width -lt 1 || $width -gt 200 ]]; then
+    echo "Error: Invalid width 1..200"
+    return 1
+  fi
+  printf '%*s\n' "$width" '' | tr ' ' -
+}
+
+# -----------------------------------------------------------------------------
+# Simple IO helpers
+# -----------------------------------------------------------------------------
+tnb() { (head -1 && tail -1); }
+dropone() {
+  local input
+  input="$([[ -p /dev/stdin ]] && cat - || printf "%s" "$*")"
+  [ -n "$input" ] && echo "$input" | tail -n +2
+}
+
+# Upper and lower case via pipe or args
+uc() {
+  local CMD='tr [:lower:] [:upper:]'
+  if [ -t 0 ]; then
+    [ $# -gt 0 ] && echo "$*" | eval "$CMD"
+  else
+    eval "$CMD"
+  fi
+}
+lc() {
+  local CMD='tr [:upper:] [:lower:]'
+  if [ -t 0 ]; then
+    [ $# -gt 0 ] && echo "$*" | eval "$CMD"
+  else
+    eval "$CMD"
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# Missing numbers in a sequence
+# -----------------------------------------------------------------------------
+missingnumbers() {
+  usage() {
+    echo "Usage: missingnumbers [OPTION]..."
+    echo "Find missing numbers in a sequence from stdin."
+    echo "Example: printf \"989\n990\n992\n995\n1005\n\" | missingnumbers"
+    echo "Options:"
+    echo "  -h, --help   show help"
+    echo "  -HORZ        horizontal output (default)"
+    echo "  -VERT        vertical output"
+    echo "  -MONO        monochrome (only with -HORZ)"
+  }
+  local DISPLAY_VERTICALLY=false
+  local COLOR_OUTPUT=true
+  while [[ $1 = -* ]]; do
+    case "$(echo "$1" | tr '[:upper:]' '[:lower:]')" in
+      -h|--help) usage; return;;
+      -horz) DISPLAY_VERTICALLY=false;;
+      -vert) DISPLAY_VERTICALLY=true;;
+      -mono) COLOR_OUTPUT=false;;
+      *) echo "Unknown option: $1" >&2; usage; return 1;;
+    esac
+    shift
+  done
+  if ! $COLOR_OUTPUT && $DISPLAY_VERTICALLY; then
+    echo "-MONO can only be used with -HORZ" >&2
+    usage
+    return 1
+  fi
+  local RED_='\033[0;31m' GREEN_='\033[0;32m' BLUE_='\033[0;34m' NC_='\033[0m'
+  if ! $COLOR_OUTPUT; then RED_=''; GREEN_=''; BLUE_=''; NC_=''; fi
+  readarray -t numbers < <(sort -n)
+  local expected_next=${numbers[0]}
+  output() { $DISPLAY_VERTICALLY && echo -e "$1" || printf "%b " "$1"; }
+  for number in "${numbers[@]}"; do
+    if [[ $number -ne $expected_next ]]; then
+      if ! $COLOR_OUTPUT; then output "${BLUE_}["; fi
+      while [[ $number -ne $expected_next ]]; do
+        output "${RED_}${BLUE_}${expected_next}${NC_}"
+        ((expected_next++))
+      done
+      if ! $COLOR_OUTPUT; then output "${BLUE_}]${NC_}"; fi
+    fi
+    output "${GREEN_}${number}${NC_}"
+    ((expected_next++))
+  done
+  $DISPLAY_VERTICALLY || echo
+}
+
+# -----------------------------------------------------------------------------
+# Column extract
+# -----------------------------------------------------------------------------
+colx() {
+  if [[ $1 == "-h" || $1 == "--help" ]]; then
+    echo "Usage: colx [column_number] [file|-]"
+    echo "Default column 1. Removes spaces."
+    return
+  fi
+  local col_number=${1:-1}
+  if (( col_number < 1 || col_number > 16 )); then
+    echo "Error: column number must be between 1 and 16"
+    return 1
+  fi
+  shift || true
+  local i=${1:-/dev/stdin}
+  awk -v c="$col_number" '{print $c}' "$i" | tr -d ' '
+}
+
+# -----------------------------------------------------------------------------
+# Aliases suitable for Ubuntu
+# -----------------------------------------------------------------------------
+alias ll='ls -AhHl --color=auto'
+alias lf='ls -la | awk '"'"'{perm=$1} /^d/ {print} !/^d/ {non++} END{if (non){}}'"'"' && ls -la | grep -v "^d"'
+alias la='ls -A'
+alias l='ls -CF'
+alias l.='ls -lart'
+alias cls='clear'
+alias tree1='find . -maxdepth 1 -type d -print | sort'
+alias tree2='find . -maxdepth 2 -type d -print | sort'
+alias gitroot='cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)"'
+
+# Quick Git aliases
+alias ga="git add . && git status && git commit -m 'updated devops script'; git push"
+
+# -----------------------------------------------------------------------------
+# Terraform and Terragrunt helpers (only if installed)
+# -----------------------------------------------------------------------------
+tffun() {
+  command -v terraform >/dev/null 2>&1 || { echo "terraform not found."; return 1; }
+  alias tf='terraform'
+  alias tfini='terraform init'
+  alias tfval='terraform validate'
+  alias tffmt='terraform fmt -recursive'
+  alias tfpln='terraform plan'
+  alias tfapl='terraform apply'
+  alias tfdes='terraform destroy'
+  alias tfshw='terraform show'
+  alias tflst='terraform state list'
+  alias tfout='terraform output'
+  alias tfref='terraform refresh'
+  alias tfimp='terraform import'
+}
+tfchk(){ alias | grep -E " tf(ini|val|fmt|pln|apl|des|shw|lst|out|ref|imp)|^alias tf="; }
+tfhlp(){
+  cat <<'EOF'
+Terraform aliases:
+ tfini, tfval, tffmt, tfpln, tfapl, tfdes, tfshw, tflst, tfout, tfref, tfimp
+EOF
+}
+# Initialize if terraform exists
+command -v terraform >/dev/null 2>&1 && tffun
+
+tgfun() {
+  command -v terragrunt >/dev/null 2>&1 || { echo "terragrunt not found."; return 1; }
+  alias tg='terragrunt'
+  alias tgpln='terragrunt plan'
+  alias tgapl='terragrunt apply'
+  alias tgdes='terragrunt destroy'
+}
+tgchk(){ alias | grep -E "^alias tg"; }
+tghlp(){
+  cat <<'EOF'
+Terragrunt aliases:
+ tg, tgpln, tgapl, tgdes
+EOF
+}
+command -v terragrunt >/dev/null 2>&1 && tgfun
+
+# -----------------------------------------------------------------------------
+# Git helpers and prompts
+# -----------------------------------------------------------------------------
+githelp() {
+  _headtext "### GIT HELPS ###"
+  _headtext "NORMAL FLOW"
+  _headtextB "ADD       -   git add . ; git status"
+  _headtextB "COMMIT    -   git commit -m 'your commit message'"
+  _headtextB "PUSH      -   git push"
+  _headtext "BRANCH MANAGEMENT"
+  _headtextB "LIST      -   git branch -a"
+  _headtextB "SWITCH    -   git checkout <branch>"
+  _headtextB "CREATE    -   git checkout -b <branch>"
+  _headtextB "DELETE    -   git branch -d <branch>"
+  _headtextB "DELETE    -   git push origin --delete <branch>"
+  _headtextB "FETCH     -   git fetch --prune"
+  _headtextB "MERGE     -   git merge <branch>"
+  _headtext "GET REPO FILES"
+  _headtextB "CLONE     -   git clone <repo/url>"
+  _headtextB "PULL      -   git pull"
+  _headtextB "REBASE    -   git pull --rebase --prune"
+  _headtextB "HARD      -   git fetch origin && git checkout main && git reset --hard origin/main"
+  _headtext "STASH"
+  _headtextB "stash     -   git stash"
+  _headtextB "pop       -   git stash pop"
+  _headtextB "list      -   git stash list"
+  _headtext "OTHER"
+  _headtextB "DIFF      -   git diff"
+  _headtextB "LOG       -   git log"
+  _headtextB "CFG       -   git config --list --show-origin"
+  _headtextB "CFG0      -   cat ~/.gitconfig"
+  _headtextB "TAG       -   git tag <tagname>"
+  _headtextB "TAG-DEL   -   git tag -d <tagname>"
+  _headtextB "REVERT    -   git revert <commit_id>"
+  _headtextB "REBASE    -   git rebase <branch_name>"
+  _headtextB "REMOTE    -   git remote -v"
+  _headtextB "CHERRY    -   git cherry-pick <commit_hash>"
+  echo
+  _headtextB "git pull && git add . && git status && git commit -m 'msg'; git push"
+  _headtextB "gitroot to jump to repo root"
+}
+
+prompthelp() {
+  _headtext  "Custom Prompts"
+  _headtextB "normalprompt, gitprompt, exitprompt"
+}
+
+alias normalprompt='PS1="${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "'
+alias gitprompt='PS1="\[\033[0;32m\]\u\[\033[0;36m\] @ \w\[\033[0;32m\]\n$(git branch 2>/dev/null | grep \"^*\" | colrm 1 2)\[\033[0;32m\]└─ \$\[\033[0m\]"'
+
+exitprompt() {
+  set_exit_color() { if [ "$?" != 0 ]; then exit_color=$RED; else exit_color=$NC; fi; }
+  PROMPT_COMMAND=set_exit_color
+  PS1="[$exit_color][$?][$NC] \w\$ "
+}
+
+# -----------------------------------------------------------------------------
+# Basic session helpers for Linux
+# -----------------------------------------------------------------------------
+x() {
+  clear
+  normalprompt
+  export LINES=$(tput lines)
+  export COLUMNS=$(tput cols)
+  export BASEDIR="$HOME"
+  cd "${BASEDIR}" || return
+  command -v neofetch >/dev/null 2>&1 && neofetch
+  cal -B 1 -A 1
+  echo "$($DATE_COMMAND -u +"%Y-%m-%d-%H:%M") // $(curl -fsSL ifconfig.me) // $(ping -c 3 8.8.8.8 2>/dev/null | awk -F'=' '/round/ {print $2}')" \
+    | tr -s ' ' | tee -a .pubicip.log
+  echo
+}
+
+# -----------------------------------------------------------------------------
+# Search files for a term
+# -----------------------------------------------------------------------------
+look4this() {
+  if [ $# -lt 2 ]; then
+    echo "Usage: look4this <filename_pattern> <search_string>"
+    return 1
+  fi
+  local pattern="$1" search="$2"
+  echo "Searching in directory: $(pwd)"
+  echo "Looking for files matching: $pattern containing string: $search"
+  local found
+  found=$(grep -RIl --include="$pattern" "$search" . 2>/dev/null | xargs -r -I{} grep -H "$search" "{}")
+  if [[ -z $found ]]; then
+    echo "No files found matching criteria."
+  else
+    echo "$found"
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# Help index for functions in this file
+# -----------------------------------------------------------------------------
+funchelp() {
+  local file="${BASH_SOURCE[0]}"
+  if [ $# -eq 0 ]; then
+    grep -E '^[a-zA-Z0-9_]+\s*\(\)\s*\{|^alias ' "$file" \
+      | sed -E 's/\s*\(\)\s*\{.*$//; s/^alias ([^=]+)=.*$/\1 (alias)/' \
+      | sort
+    echo
+    return
+  fi
+  local topic
+  topic=$(echo "$1" | tr 'A-Z' 'a-z')
+  grep -nE "^[a-zA-Z0-9_]+\s*\(\)\s*\{|^alias $topic=" "$file" | grep -i "$topic"
+}
+
+# -----------------------------------------------------------------------------
+# Window size
+# -----------------------------------------------------------------------------
+getwin() {
+  export lines=$(tput lines)
+  export columns=$(tput cols)
+  echo "Lines: $lines x Columns: $columns"
+}
+
+# -----------------------------------------------------------------------------
+# Tab name, works in many terminals that support xterm title
+# -----------------------------------------------------------------------------
+tabname() { echo -ne "\033]0;$*\007"; }
+
+# -----------------------------------------------------------------------------
+# Grep across common env dotfiles
+# -----------------------------------------------------------------------------
+grepenv() {
+  grep -rin --color=always "${1}" ~/.bashrc ~/.bash_aliases ~/.profile ~/.bash_logout 2>/dev/null
+}
+
+# -----------------------------------------------------------------------------
+# Backup notes to git directory
+# -----------------------------------------------------------------------------
+backitup() {
+  local src_dir=${1:-"$HOME/Documents/MyNotes/"}
+  local target_dir="$HOME/gitlab/mynotes"
+  if [ ! -d "$target_dir" ]; then
+    echo "Target directory $target_dir does not exist."
+    return 1
+  fi
+  find "$src_dir" -type f \( -name "*.txt" -o -name "*.yml" -o -name "*.yaml" \) -exec grep -Iq . {} \; -exec cp {} "$target_dir/" \;
+  pushd "$target_dir" >/dev/null || return 1
+  local commit_msg="MyNotes - $(date +"%d %b %Y %T")"
+  git add .
+  git commit -m "$commit_msg" || true
+  git push origin main
+  git status
+  popd >/dev/null || true
+}
+
+# -----------------------------------------------------------------------------
+# CLI tools update (Ubuntu variants)
+# -----------------------------------------------------------------------------
+update_cli_tools() {
+  if command -v apt >/dev/null 2>&1; then
+    echo "Updating apt packages..."
+    sudo apt update && sudo apt -y upgrade
+  fi
+  if command -v gcloud >/dev/null 2>&1; then
+    echo "Updating Google Cloud SDK..."
+    gcloud components update
+  fi
+  if command -v az >/dev/null 2>&1; then
+    echo "Updating Azure CLI..."
+    az upgrade -y
+  fi
+}
+
+# =============================================================================
+# End of ubuntu-myfuncs.sh
+# =============================================================================
+
