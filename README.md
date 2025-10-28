@@ -82,9 +82,9 @@ look4this "*.tf" module    # search text in matching files
 tfchk
 
 # Help system
-help                    # Show all available help topics
-help json               # Show JSON function help
-help jqcheck            # Show help for specific function
+funchelp                # Show all available functions
+funchelp json           # Show JSON function help
+funchelp jqcheck        # Show help for specific function
 ```
 
 ## Function groups
@@ -123,7 +123,7 @@ help jqcheck            # Show help for specific function
 
 * `hl`, `hg`, `tnb`, `dropone`, `uc`, `lc`, `getwin`, `tabname`
 * Prompts: `normalprompt`, `gitprompt`, `exitprompt`, plus `githelp`, `prompthelp`
-* Help: `help [topic]` - Comprehensive colorized help system
+* Help: `funchelp [topic]` - Comprehensive help system
 
 ### Terraform
 
