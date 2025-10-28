@@ -110,32 +110,8 @@ verify_colors() {
 }
 
 # -----------------------------------------------------------------------------
-# YAML and JSON helpers (yq v4+, jq)
+# JSON helpers (jq)
 # -----------------------------------------------------------------------------
-
-# Print CONFIG_YAML env and top-level keys
-yqls() {
-  if [ -z "${CONFIG_YAML}" ]; then
-    echo "CONFIG_YAML is not set." 1>&2
-    return 1
-  fi
-  echo "CONFIG_YAML=${CONFIG_YAML}"
-  if ! command -v yq >/dev/null 2>&1; then
-    echo "yq not found. Install yq (v4)." 1>&2
-    return 1
-  fi
-  yq eval 'keys | .[]' "${CONFIG_YAML}" | sed 's/^/     /'
-}
-
-# ycat, yaml cat
-ycat() {
-  if ! command -v yq >/dev/null 2>&1; then
-    echo "yq not found. Install yq (v4)." 1>&2
-    return 1
-  fi
-  local input="${1:-/dev/stdin}"
-  yq eval '.' "$input"
-}
 
 # jcat, json cat
 jcat() {
@@ -199,37 +175,6 @@ jqjoke() {
   fi
   curl -fsSL -H "Accept: application/json" https://icanhazdadjoke.com/ | jq .
 }
-
-# y2j, yaml to json
-y2j() {
-  if ! command -v yq >/dev/null 2>&1; then
-    echo "yq not found. Install yq (v4)." 1>&2
-    return 1
-  fi
-  local input="${1:-/dev/stdin}"
-  yq eval -o=json '.' "$input" | jq .
-}
-
-# yqshow, show stanza from CONFIG_YAML
-yqshow() {
-  if [ $# -lt 1 ]; then
-    echo "Usage: yqshow <path>" 1>&2
-    return 1
-  fi
-  if [ -z "${CONFIG_YAML}" ]; then
-    echo "CONFIG_YAML is not set." 1>&2
-    return 1
-  fi
-  if ! command -v yq >/dev/null 2>&1; then
-    echo "yq not found. Install yq (v4)." 1>&2
-    return 1
-  fi
-  local path="$1"
-  echo "${path}:"
-  yq eval ".$path" "${CONFIG_YAML}" | sed 's/^/   /'
-}
-
-yqclr() { unset CONFIG_YAML; }
 
 # -----------------------------------------------------------------------------
 # Notes search utilities
