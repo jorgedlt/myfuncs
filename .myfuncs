@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# ubuntu-myfuncs.sh, a collection of Bash functions and aliases for Ubuntu 24.04
+# myfunc.sh, a collection of Bash functions and aliases for Ubuntu 24.04
 # Author: Jorge de la Torre
 # Updated for Ubuntu 24.04 by converting macOS-specific parts to Linux-friendly
 # =============================================================================
@@ -1325,6 +1325,6 @@ update_cli_tools() {
 }
 
 # =============================================================================
-# End of ubuntu-myfuncs.sh
+# End of myfunc.sh
 # =============================================================================
 
