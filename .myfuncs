@@ -74,7 +74,7 @@ _detect_uuid
 # -----------------------------------------------------------------------------
 # Terminal colors
 # -----------------------------------------------------------------------------
-set_colors() {
+_set_colors() {
   export BLACK=$(tput setaf 0 2>/dev/null || printf '')
   export RED=$(tput setaf 1 2>/dev/null || printf '')
   export GREEN=$(tput setaf 2 2>/dev/null || printf '')
@@ -89,7 +89,7 @@ set_colors() {
   export RESET=$(tput sgr0 2>/dev/null || printf '')
   export NC="${RESET}"
 }
-set_colors
+_set_colors
 
 mycolors() {
   for color in BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE GRAY; do
@@ -687,7 +687,7 @@ alias ga="git add . && git status && git commit -m 'updated devops script'; git 
 # -----------------------------------------------------------------------------
 # Terraform and Terragrunt helpers (only if installed)
 # -----------------------------------------------------------------------------
-tffun() {
+_tffun() {
   command -v terraform >/dev/null 2>&1 || { echo "terraform not found."; return 1; }
   alias tf='terraform'
   alias tfini='terraform init'
@@ -710,7 +710,7 @@ Terraform aliases:
 EOF
 }
 # Initialize if terraform exists
-command -v terraform >/dev/null 2>&1 && tffun
+command -v terraform >/dev/null 2>&1 && _tffun
 
 
 

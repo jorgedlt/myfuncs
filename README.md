@@ -9,6 +9,10 @@ A practical Bash utility pack for Ubuntu 24.04 that replaces macOS specific beha
 
 A compact Bash function and alias library tuned for Ubuntu 24.04. It replaces macOS specific bits with Linux friendly commands and adds sensible fallbacks. Utilities cover YAML and JSON viewing, note searching, clipboard text shaping, time and date helpers, simple networking math, project file dumping, and small quality of life wrappers for Git, Terraform, and Terragrunt.
 
+## Function Naming Convention
+
+Functions with leading underscores (e.g., `_function_name`) are internal helper functions called by other functions and should not be invoked directly by users. Functions without leading underscores are safe for direct user invocation.
+
 ## Requirements
 
 Core: `bash`, `curl`, `grep`, `sed`, `awk`, `find`, `ls`, `date`, `printf`
@@ -112,12 +116,12 @@ tfchk
 
 ### Shell helpers and prompts
 
-* `hl`, `hg`, `tnb`, `dropone`, `uc`, `lc`, `getwin`, `tabname`, `_hline`
+* `hl`, `hg`, `tnb`, `dropone`, `uc`, `lc`, `getwin`, `tabname`
 * Prompts: `normalprompt`, `gitprompt`, `exitprompt`, plus `githelp`, `prompthelp`
 
 ### Terraform
 
-* `tffun` auto-loads aliases if `terraform` exists: `tfini`, `tfval`, `tffmt`, `tfpln`, `tfapl`, `tfdes`, `tfshw`, `tflst`, `tfout`, `tfref`, `tfimp`
+* `_tffun` auto-loads aliases if `terraform` exists: `tfini`, `tfval`, `tffmt`, `tfpln`, `tfapl`, `tfdes`, `tfshw`, `tflst`, `tfout`, `tfref`, `tfimp`
 
 ## Configuration and environment
 
