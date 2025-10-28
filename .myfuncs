@@ -882,105 +882,105 @@ _show_main_help() {
 
 _show_json_help() {
   echo "${GREEN}JSON functions:${RESET}"
-  echo "jcat <file>     Pretty print JSON file or stdin"
-  echo "jqkeys <json>   Show top-level JSON keys"
-  echo "jqcheck <file>  Validate JSON file syntax"
-  echo "jqpaths <json>  Show all JSON paths"
-  echo "jqjoke          Fetch sample JSON payload"
+  echo "  jcat <file>     Pretty print JSON file or stdin"
+  echo "  jqkeys <json>   Show top-level JSON keys"
+  echo "  jqcheck <file>  Validate JSON file syntax"
+  echo "  jqpaths <json>  Show all JSON paths"
+  echo "  jqjoke          Fetch sample JSON payload"
   echo
   echo "${GRAY}All functions work with stdin if no file specified.${RESET}"
 }
 
 _show_notes_help() {
   echo "${GREEN}Notes functions:${RESET}"
-  echo "busca <term>           Search personal notes in ~/Documents/MyNotes"
-  echo "whattodo               Show TODO density by file"
-  echo "cleartodo <start> <days> Mark TODOs as SKIP in date range"
-  echo "bang                   Generate unique anchor with UUID/timestamp"
-  echo "findbang               Find all bang anchors in notes"
+  echo "  busca <term>           Search personal notes in ~/Documents/MyNotes"
+  echo "  whattodo               Show TODO density by file"
+  echo "  cleartodo <start> <days> Mark TODOs as SKIP in date range"
+  echo "  bang                   Generate unique anchor with UUID/timestamp"
+  echo "  findbang               Find all bang anchors in notes"
   echo
   echo "${GRAY}Notes are searched in ~/Documents/MyNotes/*.txt files.${RESET}"
 }
 
 _show_network_help() {
   echo "${GREEN}Network functions:${RESET}"
-  echo "pubip                 Show your public IP address"
-  echo "whereip <ip>          Show IP geolocation info"
-  echo "whoip <search>        Search wellknown IP database"
-  echo "netcalc <ip> <mask>   Calculate network/broadcast IPs"
+  echo "  pubip                 Show your public IP address"
+  echo "  whereip <ip>          Show IP geolocation info"
+  echo "  whoip <search>        Search wellknown IP database"
+  echo "  netcalc <ip> <mask>   Calculate network/broadcast IPs"
 }
 
 _show_file_help() {
   echo "${GREEN}File functions:${RESET}"
-  echo "splat <pattern>...     Print files with headers for review"
-  echo "splooge [dir]          Recursive print honoring ~/.splooge.filter"
-  echo "gitdiff <file>         Show git diff for file against HEAD"
-  echo "look4this <pattern> <term> Search for term in files matching pattern"
+  echo "  splat <pattern>...     Print files with headers for review"
+  echo "  splooge [dir]          Recursive print honoring ~/.splooge.filter"
+  echo "  gitdiff <file>         Show git diff for file against HEAD"
+  echo "  look4this <pattern> <term> Search for term in files matching pattern"
 }
 
 _show_clipboard_help() {
   echo "${GREEN}Clipboard functions:${RESET}"
-  echo "clip <width>           Wrap clipboard text to width (default 62)"
-  echo "clop <width>           Wrap and copy back to clipboard"
-  echo "ones                   Collapse multiple spaces in clipboard"
-  echo "moos <old> <new>       Replace characters in clipboard"
-  echo "clpcry <password>      Encrypt clipboard content"
-  echo "nocry <password>       Decrypt clipboard content"
+  echo "  clip <width>           Wrap clipboard text to width (default 62)"
+  echo "  clop <width>           Wrap and copy back to clipboard"
+  echo "  ones                   Collapse multiple spaces in clipboard"
+  echo "  moos <old> <new>       Replace characters in clipboard"
+  echo "  clpcry <password>      Encrypt clipboard content"
+  echo "  nocry <password>       Decrypt clipboard content"
   echo
   echo "${CYAN}Text processing:${RESET}"
-  echo "txtcln <delim1> <delim2> Clean text with delimiters"
-  echo "mkhead                 Create Markdown table header"
-  echo "mkbody                 Create Markdown table body"
-  echo "mkgrid                 Create complete Markdown table"
-  echo "lineup                 Convert spaces to newlines"
-  echo "spaceout               Convert newlines to spaces"
-  echo "numcat <file>          Number lines in file"
-  echo "coldwar <text>         Format text in 5-character groups"
-  echo "letonly <text>         Extract only letters"
-  echo "fold64 <text>          Wrap text at 64 characters"
-  echo "colx <column> [file]   Extract specific column"
+  echo "  txtcln <delim1> <delim2> Clean text with delimiters"
+  echo "  mkhead                 Create Markdown table header"
+  echo "  mkbody                 Create Markdown table body"
+  echo "  mkgrid                 Create complete Markdown table"
+  echo "  lineup                 Convert spaces to newlines"
+  echo "  spaceout               Convert newlines to spaces"
+  echo "  numcat <file>          Number lines in file"
+  echo "  coldwar <text>         Format text in 5-character groups"
+  echo "  letonly <text>         Extract only letters"
+  echo "  fold64 <text>          Wrap text at 64 characters"
+  echo "  colx <column> [file]   Extract specific column"
 }
 
 _show_time_help() {
   echo "${GREEN}Time and date functions:${RESET}"
-  echo "epochnow               Show current Unix timestamp"
-  echo "e2h <timestamp>        Convert epoch to human readable"
-  echo "h2e <date>             Convert human date to epoch"
-  echo "utc2local <datetime>   Convert UTC to local timezone"
-  echo "inthepast <days>       Show date N days ago"
-  echo "inthefuture <days>     Show date N days from now"
+  echo "  epochnow               Show current Unix timestamp"
+  echo "  e2h <timestamp>        Convert epoch to human readable"
+  echo "  h2e <date>             Convert human date to epoch"
+  echo "  utc2local <datetime>   Convert UTC to local timezone"
+  echo "  inthepast <days>       Show date N days ago"
+  echo "  inthefuture <days>     Show date N days from now"
 }
 
 _show_shell_help() {
   echo "${GREEN}Shell functions:${RESET}"
-  echo "hl                     Show recent command history"
-  echo "hg <term>              Search command history"
+  echo "  hl                     Show recent command history"
+  echo "  hg <term>              Search command history"
   echo
   echo "${CYAN}Text processing:${RESET}"
-  echo "tnb                    Show first and last lines"
-  echo "dropone                Remove first line from input"
-  echo "uc <text>              Convert to uppercase"
-  echo "lc <text>              Convert to lowercase"
+  echo "  tnb                    Show first and last lines"
+  echo "  dropone                Remove first line from input"
+  echo "  uc <text>              Convert to uppercase"
+  echo "  lc <text>              Convert to lowercase"
   echo
   echo "${CYAN}System info:${RESET}"
-  echo "getwin                 Show terminal dimensions"
-  echo "tabname <title>        Set terminal tab title"
+  echo "  getwin                 Show terminal dimensions"
+  echo "  tabname <title>        Set terminal tab title"
   echo
   echo "${CYAN}Prompts:${RESET}"
-  echo "normalprompt           Set standard bash prompt"
-  echo "gitprompt              Set git-aware prompt"
-  echo "exitprompt             Set prompt with exit code colors"
-  echo "githelp                Show comprehensive git help"
-  echo "prompthelp             Show prompt configuration help"
+  echo "  normalprompt           Set standard bash prompt"
+  echo "  gitprompt              Set git-aware prompt"
+  echo "  exitprompt             Set prompt with exit code colors"
+  echo "  githelp                Show comprehensive git help"
+  echo "  prompthelp             Show prompt configuration help"
 }
 
 _show_terraform_help() {
   echo "${GREEN}Terraform functions:${RESET}"
-  echo "tfchk                  Check available terraform aliases"
-  echo "tfhlp                  Show terraform help"
+  echo "  tfchk                  Check available terraform aliases"
+  echo "  tfhlp                  Show terraform help"
   echo
   echo "${GRAY}Available aliases:${RESET}"
-  echo "tfini, tfval, tffmt, tfpln, tfapl, tfdes, tfshw, tflst, tfout, tfref, tfimp"
+  echo "  tfini, tfval, tffmt, tfpln, tfapl, tfdes, tfshw, tflst, tfout, tfref, tfimp"
 }
 
 _show_function_help() {
