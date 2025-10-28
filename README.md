@@ -40,15 +40,12 @@ source ~/.bashrc
 ## Quick start
 
 ```bash
-# YAML and JSON
-export CONFIG_YAML=./config.yaml
-yqls                        # list top-level keys
-yqshow app.settings        # show a path from CONFIG_YAML
-ycat file.yaml             # pretty print YAML
+# JSON
 jcat file.json             # pretty print JSON
 jqkeys < file.json         # show JSON keys
 jqcheck file.json          # validate JSON
-y2j file.yaml              # convert YAML to JSON
+jqpaths < file.json        # show JSON paths
+jqjoke                     # fetch sample JSON
 
 # Notes
 busca "kafka"              # search notes
@@ -84,10 +81,10 @@ tgchk
 
 ## Function groups
 
-### YAML and JSON
+### JSON
 
-* `yqls`, `yqshow`, `ycat`, `jcat`, `jqkeys`, `jqcheck`, `jqpaths`, `y2j`, `jqjoke`
-  Work with `CONFIG_YAML`, explore JSON structures, convert YAML to JSON, and fetch a simple sample JSON payload for testing.
+* `jcat`, `jqkeys`, `jqcheck`, `jqpaths`, `jqjoke`
+  Pretty print JSON, explore JSON structures, validate JSON files, show JSON paths, and fetch a simple sample JSON payload for testing.
 
 ### Notes search
 
@@ -126,7 +123,6 @@ tgchk
 
 ## Configuration and environment
 
-* `CONFIG_YAML` should point to a YAML file for `yqshow` and `yqls`.
 * `~/.splooge.filter` defines filename patterns to exclude per line, for example:
 
   ```
