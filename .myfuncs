@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# myfunc.sh, a collection of Bash functions and aliases for Ubuntu 24.04
+# myfuncs.sh, a collection of Bash functions and aliases for Ubuntu 24.04
 # Author: Jorge de la Torre
 # Updated for Ubuntu 24.04 by converting macOS-specific parts to Linux-friendly
 # =============================================================================
@@ -813,7 +813,7 @@ look4this() {
 funchelp() {
   if [ $# -eq 0 ]; then
     # Show all user-callable functions and aliases (no underscores)
-    echo "${GREEN}MyFunc functions and aliases:${RESET}"
+    echo "${GREEN}MyFuncs functions and aliases:${RESET}"
     echo "These commands are available. Type 'funchelp name' to find out more about function 'name'."
     echo
     echo "${CYAN}JSON functions:${RESET}     jcat jqkeys jqcheck jqpaths jqjoke"
@@ -862,7 +862,7 @@ help() {
 }
 
 _show_main_help() {
-  _headtext "### MyFunc HELP ###"
+  _headtext "### MyFuncs HELP ###"
   echo
   _headtextB "Available Help Topics:"
   echo
@@ -1241,9 +1241,9 @@ _check_and_install_deps() {
 }
 
 # Function to install all dependencies
-myfunc_install_deps() {
-  echo "${GREEN}MyFunc Dependency Installer${RESET}"
-  echo "This will check for and install required dependencies for MyFunc."
+myfuncs_install_deps() {
+  echo "${GREEN}MyFuncs Dependency Installer${RESET}"
+  echo "This will check for and install required dependencies for MyFuncs."
   echo
 
   # Check if running as root or can use sudo
@@ -1325,6 +1325,6 @@ update_cli_tools() {
 }
 
 # =============================================================================
-# End of myfunc.sh
+# End of myfuncs.sh
 # =============================================================================
 

@@ -1,4 +1,4 @@
-# AGENTS.md - MyFunc Bash Utility Library
+# AGENTS.md - MyFuncs Bash Utility Library
 
 ## Build/Lint/Test Commands
 - **Syntax check**: `bash -n .myfuncs`
