@@ -1276,15 +1276,13 @@ myfuncs_install() {
     return 1
   fi
 
-  local source_line="source \"$script_path\""
-
   # Check if already in .bashrc
-  if grep -q "$source_line" ~/.bashrc; then
+  if grep -q "source \"$script_path\"" ~/.bashrc; then
     echo "${YELLOW}⚠ MyFuncs is already configured in ~/.bashrc${RESET}"
   else
     # Append to .bashrc
-    if echo "$source_line" >> ~/.bashrc; then
-      echo "${GREEN}✓ Added '$source_line' to ~/.bashrc${RESET}"
+    if echo "source \"$script_path\"" >> ~/.bashrc; then
+      echo "${GREEN}✓ Added 'source \"$script_path\"' to ~/.bashrc${RESET}"
     else
       echo "${RED}✗ Failed to update ~/.bashrc${RESET}" >&2
       return 1
