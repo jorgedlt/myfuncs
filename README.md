@@ -1,13 +1,13 @@
-# lfuncs
+# MyFunc
 Linux flavored BASH functions for casual CLI
 
-A practical Bash utility pack for Ubuntu 24.04 that replaces macOS specific behavior with Linux ready commands. It includes fast YAML and JSON inspectors, note and TODO search, clipboard and text shaping helpers, date and time converters, simple networking math, file dumpers for reviews, and small quality of life wrappers for Git, Terraform, and Terragrunt. Sensible auto detection picks Wayland or X11 clipboards, with clear fallbacks. Drop the script in your home directory, source it from .bashrc, and use the grouped functions as focused, composable tools in everyday workflows.
+A practical Bash utility pack for Ubuntu 24.04 that replaces macOS specific behavior with Linux ready commands. It includes fast JSON inspectors, note and TODO search, clipboard and text shaping helpers, date and time converters, simple networking math, file dumpers for reviews, and small quality of life wrappers for Git and Terraform. Sensible auto detection picks Wayland or X11 clipboards, with clear fallbacks. Drop the script in your home directory, source it from .bashrc, and use the grouped functions as focused, composable tools in everyday workflows.
 
 # README, ubuntu-myfuncs
 
 ## Overview
 
-A compact Bash function and alias library tuned for Ubuntu 24.04. It replaces macOS specific bits with Linux friendly commands and adds sensible fallbacks. Utilities cover YAML and JSON viewing, note searching, clipboard text shaping, time and date helpers, simple networking math, project file dumping, and small quality of life wrappers for Git, Terraform, and Terragrunt.
+A compact Bash function and alias library tuned for Ubuntu 24.04. It replaces macOS specific bits with Linux friendly commands and adds sensible fallbacks. Utilities cover JSON viewing, note searching, clipboard text shaping, time and date helpers, simple networking math, project file dumping, and small quality of life wrappers for Git and Terraform.
 
 ## Function Naming Convention
 
@@ -16,8 +16,24 @@ Functions with leading underscores (e.g., `_function_name`) are internal helper 
 ## Requirements
 
 Core: `bash`, `curl`, `grep`, `sed`, `awk`, `find`, `ls`, `date`, `printf`
-Recommended: `jq`, `yq` (v4), `uuidgen` (util-linux), `wl-clipboard` or `xclip` or `xsel`, `ccrypt`, `coreutils`, `neofetch`
+Recommended: `jq`, `uuidgen` (util-linux), `wl-clipboard` or `xclip` or `xsel`, `ccrypt`, `coreutils`, `neofetch`
 Optional: `terraform`, `git`, `base32`
+
+## Automatic Dependency Installation
+
+MyFunc includes an automatic dependency installer that detects your Linux distribution and package manager:
+
+```bash
+myfunc_install_deps
+```
+
+This will:
+- Detect your package manager (apt, dnf, yum, pacman, brew, etc.)
+- Check for required dependencies
+- Install missing packages automatically
+- Provide clear feedback on installation status
+
+Run this after initial setup to ensure all features work properly.
 
 Install suggestions:
 
@@ -85,6 +101,9 @@ tfchk
 funchelp                # Show all available functions
 funchelp json           # Show JSON function help
 funchelp jqcheck        # Show help for specific function
+
+# Dependency management
+myfunc_install_deps     # Check and install all required dependencies
 ```
 
 ## Function groups

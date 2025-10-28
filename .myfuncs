@@ -813,7 +813,7 @@ look4this() {
 funchelp() {
   if [ $# -eq 0 ]; then
     # Show all user-callable functions and aliases (no underscores)
-    echo "${GREEN}LFUNCS functions and aliases:${RESET}"
+    echo "${GREEN}MyFunc functions and aliases:${RESET}"
     echo "These commands are available. Type 'funchelp name' to find out more about function 'name'."
     echo
     echo "${CYAN}JSON functions:${RESET}     jcat jqkeys jqcheck jqpaths jqjoke"
@@ -862,7 +862,7 @@ help() {
 }
 
 _show_main_help() {
-  _headtext "### LFUNCS HELP ###"
+  _headtext "### MyFunc HELP ###"
   echo
   _headtextB "Available Help Topics:"
   echo
@@ -1025,6 +1025,239 @@ _show_function_help() {
       echo "${RED}funchelp: no help topics match '$func'.${RESET}"
     fi
   fi
+}
+
+# -----------------------------------------------------------------------------
+# Dependency management and installation
+# -----------------------------------------------------------------------------
+_detect_package_manager() {
+  if command -v apt >/dev/null 2>&1; then
+    echo "apt"
+  elif command -v dnf >/dev/null 2>&1; then
+    echo "dnf"
+  elif command -v yum >/dev/null 2>&1; then
+    echo "yum"
+  elif command -v pacman >/dev/null 2>&1; then
+    echo "pacman"
+  elif command -v zypper >/dev/null 2>&1; then
+    echo "zypper"
+  elif command -v brew >/dev/null 2>&1; then
+    echo "brew"
+  else
+    echo "unknown"
+  fi
+}
+
+_get_package_name() {
+  local tool="$1"
+  local pm="$2"
+
+  case "$pm" in
+    apt)
+      case "$tool" in
+        jq) echo "jq" ;;
+        yq) echo "yq" ;;  # Note: yq v4 might need manual install
+        ccrypt) echo "ccrypt" ;;
+        uuidgen) echo "util-linux" ;;
+        xclip) echo "xclip" ;;
+        xsel) echo "xsel" ;;
+        wl-clipboard) echo "wl-clipboard" ;;
+        neofetch) echo "neofetch" ;;
+        terraform) echo "terraform" ;;
+        coreutils) echo "coreutils" ;;
+        curl) echo "curl" ;;
+        grep) echo "grep" ;;
+        sed) echo "sed" ;;
+        awk) echo "gawk" ;;
+        find) echo "findutils" ;;
+        date) echo "coreutils" ;;
+        printf) echo "coreutils" ;;
+        *) echo "$tool" ;;
+      esac
+      ;;
+    dnf|yum)
+      case "$tool" in
+        jq) echo "jq" ;;
+        yq) echo "yq" ;;
+        ccrypt) echo "ccrypt" ;;
+        uuidgen) echo "util-linux" ;;
+        xclip) echo "xclip" ;;
+        xsel) echo "xsel" ;;
+        wl-clipboard) echo "wl-clipboard" ;;
+        neofetch) echo "neofetch" ;;
+        terraform) echo "terraform" ;;
+        *) echo "$tool" ;;
+      esac
+      ;;
+    pacman)
+      case "$tool" in
+        jq) echo "jq" ;;
+        yq) echo "yq" ;;
+        ccrypt) echo "ccrypt" ;;
+        uuidgen) echo "util-linux" ;;
+        xclip) echo "xclip" ;;
+        xsel) echo "xsel" ;;
+        wl-clipboard) echo "wl-clipboard" ;;
+        neofetch) echo "neofetch" ;;
+        terraform) echo "terraform" ;;
+        *) echo "$tool" ;;
+      esac
+      ;;
+    brew)
+      case "$tool" in
+        jq) echo "jq" ;;
+        yq) echo "yq" ;;
+        ccrypt) echo "ccrypt" ;;
+        uuidgen) echo "util-linux" ;;
+        xclip) echo "xclip" ;;
+        xsel) echo "xsel" ;;
+        wl-clipboard) echo "wl-clipboard" ;;
+        neofetch) echo "neofetch" ;;
+        terraform) echo "terraform" ;;
+        coreutils) echo "coreutils" ;;
+        *) echo "$tool" ;;
+      esac
+      ;;
+    *)
+      echo "$tool"
+      ;;
+  esac
+}
+
+_install_package() {
+  local tool="$1"
+  local pm="$(_detect_package_manager)"
+
+  if [ "$pm" = "unknown" ]; then
+    echo "${RED}Error: Unknown package manager. Please install $tool manually.${RESET}"
+    return 1
+  fi
+
+  local package="$(_get_package_name "$tool" "$pm")"
+
+  echo "${CYAN}Installing $tool (package: $package) using $pm...${RESET}"
+
+  case "$pm" in
+    apt)
+      if ! sudo apt update && sudo apt install -y "$package"; then
+        echo "${RED}Failed to install $package${RESET}"
+        return 1
+      fi
+      ;;
+    dnf)
+      if ! sudo dnf install -y "$package"; then
+        echo "${RED}Failed to install $package${RESET}"
+        return 1
+      fi
+      ;;
+    yum)
+      if ! sudo yum install -y "$package"; then
+        echo "${RED}Failed to install $package${RESET}"
+        return 1
+      fi
+      ;;
+    pacman)
+      if ! sudo pacman -S --noconfirm "$package"; then
+        echo "${RED}Failed to install $package${RESET}"
+        return 1
+      fi
+      ;;
+    brew)
+      if ! brew install "$package"; then
+        echo "${RED}Failed to install $package${RESET}"
+        return 1
+      fi
+      ;;
+  esac
+
+  echo "${GREEN}Successfully installed $tool${RESET}"
+}
+
+_check_and_install_deps() {
+  local pm="$(_detect_package_manager)"
+  echo "${CYAN}Detected package manager: $pm${RESET}"
+
+  # Core dependencies that are always needed
+  local core_deps="curl grep sed awk find date printf coreutils"
+
+  # Optional dependencies that enhance functionality
+  local optional_deps="jq ccrypt uuidgen neofetch"
+
+  # Clipboard tools (try to install at least one)
+  local clipboard_deps="wl-clipboard xclip xsel"
+
+  echo "${CYAN}Checking core dependencies...${RESET}"
+  for dep in $core_deps; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+      echo "${YELLOW}Missing core dependency: $dep${RESET}"
+      if _install_package "$dep"; then
+        echo "${GREEN}✓ Installed $dep${RESET}"
+      else
+        echo "${RED}✗ Failed to install $dep${RESET}"
+      fi
+    else
+      echo "${GREEN}✓ $dep is available${RESET}"
+    fi
+  done
+
+  echo
+  echo "${CYAN}Checking optional dependencies...${RESET}"
+  for dep in $optional_deps; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+      echo "${YELLOW}Missing optional dependency: $dep${RESET}"
+      if _install_package "$dep"; then
+        echo "${GREEN}✓ Installed $dep${RESET}"
+      else
+        echo "${YELLOW}⚠ Failed to install $dep (optional)${RESET}"
+      fi
+    else
+      echo "${GREEN}✓ $dep is available${RESET}"
+    fi
+  done
+
+  echo
+  echo "${CYAN}Checking clipboard tools...${RESET}"
+  local clipboard_installed=false
+  for dep in $clipboard_deps; do
+    if command -v "$dep" >/dev/null 2>&1; then
+      echo "${GREEN}✓ $dep is available${RESET}"
+      clipboard_installed=true
+      break
+    fi
+  done
+
+  if ! $clipboard_installed; then
+    echo "${YELLOW}No clipboard tools found. Installing xclip...${RESET}"
+    if _install_package "xclip"; then
+      echo "${GREEN}✓ Installed xclip${RESET}"
+    else
+      echo "${YELLOW}⚠ Failed to install clipboard tools${RESET}"
+    fi
+  fi
+
+  echo
+  echo "${GREEN}Dependency check complete!${RESET}"
+  echo "${GRAY}Note: Some tools like 'yq' may need manual installation for specific versions.${RESET}"
+}
+
+# Function to install all dependencies
+myfunc_install_deps() {
+  echo "${GREEN}MyFunc Dependency Installer${RESET}"
+  echo "This will check for and install required dependencies for MyFunc."
+  echo
+
+  # Check if running as root or can use sudo
+  if [ "$EUID" -eq 0 ]; then
+    echo "${GREEN}Running as root - proceeding with installation...${RESET}"
+  elif command -v sudo >/dev/null 2>&1; then
+    echo "${YELLOW}Will use sudo for installation. You may be prompted for your password.${RESET}"
+  else
+    echo "${RED}Error: Neither running as root nor sudo available. Please install dependencies manually.${RESET}"
+    return 1
+  fi
+
+  echo
+  _check_and_install_deps
 }
 
 # Legacy function name for backward compatibility
