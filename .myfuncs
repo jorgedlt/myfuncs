@@ -1269,45 +1269,8 @@ myfuncs_install_deps() {
 
 # Function to install MyFuncs
 myfuncs_install() {
-  local script_path="${1:-$(pwd)/.myfuncs}"
-
-  echo "${GREEN}MyFuncs Installer${RESET}"
+  echo "MyFuncs Installer"
   echo "Installing MyFuncs to your system..."
-  echo "This will add a source line to ~/.bashrc pointing to: $script_path"
-  echo
-
-  # Check if script exists
-  if [ ! -f "$script_path" ]; then
-    echo "${RED}Error: .myfuncs not found at $script_path${RESET}" >&2
-    echo "Usage: myfuncs_install [path/to/.myfuncs]" >&2
-    return 1
-  fi
-
-  # Check if already in .bashrc
-  if grep -q "source \"$script_path\"" ~/.bashrc; then
-    echo "${YELLOW}⚠ MyFuncs is already configured in ~/.bashrc${RESET}"
-  else
-    # Append to .bashrc
-    if echo "source \"$script_path\"" >> ~/.bashrc; then
-      echo "${GREEN}✓ Added 'source \"$script_path\"' to ~/.bashrc${RESET}"
-    else
-      echo "${RED}✗ Failed to update ~/.bashrc${RESET}" >&2
-      return 1
-    fi
-  fi
-
-  # Source immediately to make functions available
-  if source "$script_path"; then
-    echo "${GREEN}✓ MyFuncs functions are now available in this session${RESET}"
-  else
-    echo "${YELLOW}⚠ Failed to source $script_path, but installation completed${RESET}"
-  fi
-
-  echo
-  echo "${GREEN}Installation complete!${RESET}"
-  echo "The source code remains in: $script_path"
-  echo "Run 'myfuncs_install_deps' to install required dependencies."
-  echo "Restart your terminal or run 'source ~/.bashrc' to load MyFuncs in new sessions."
 }
 
 # Legacy function name for backward compatibility
