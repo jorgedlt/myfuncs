@@ -46,12 +46,29 @@ sudo apt install -y wl-clipboard
 
 ## Setup
 
-Place the script in your home directory and source it from your shell config.
+Download or clone the repository, then run the automated installer:
 
 ```bash
-# clone or copy .myfuncs somewhere, for example:
+# Download the .myfuncs file
+wget https://raw.githubusercontent.com/jorgedlt/myfuncs/main/.myfuncs
+
+# Run the installer (this will copy to ~/.myfuncs, update ~/.bashrc, and source immediately)
+bash -c 'source .myfuncs && myfuncs_install'
+
+# Optional: Install dependencies
+myfuncs_install_deps
+```
+
+Alternatively, manual setup:
+
+```bash
+# Copy to home directory
 cp .myfuncs ~/.myfuncs
+
+# Add to .bashrc if not already present
 echo 'source ~/.myfuncs' >> ~/.bashrc
+
+# Source for current session
 source ~/.bashrc
 ```
 
@@ -100,7 +117,8 @@ funchelp                # Show all available functions
 funchelp json           # Show JSON function help
 funchelp jqcheck        # Show help for specific function
 
-# Dependency management
+# Installation and dependency management
+myfuncs_install          # Install MyFuncs to system
 myfuncs_install_deps     # Check and install all required dependencies
 ```
 
@@ -141,6 +159,7 @@ myfuncs_install_deps     # Check and install all required dependencies
 * `hl`, `hg`, `tnb`, `dropone`, `uc`, `lc`, `getwin`, `tabname`
 * Prompts: `normalprompt`, `gitprompt`, `exitprompt`, plus `githelp`, `prompthelp`
 * Help: `funchelp [topic]` - Comprehensive help system
+* Installation: `myfuncs_install`, `myfuncs_install_deps` - Automated setup and dependency management
 
 ### Terraform
 
