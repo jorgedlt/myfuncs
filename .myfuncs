@@ -1266,6 +1266,7 @@ myfuncs_install() {
 
   echo "${GREEN}MyFuncs Installer${RESET}"
   echo "Installing MyFuncs to your system..."
+  echo "This will add a source line to ~/.bashrc pointing to: $script_path"
   echo
 
   # Check if script exists
@@ -1275,21 +1276,17 @@ myfuncs_install() {
     return 1
   fi
 
-  # Copy to home directory
-  if cp "$script_path" ~/.myfuncs; then
-    echo "${GREEN}✓ Copied .myfuncs to ~/.myfuncs${RESET}"
-  else
-    echo "${RED}✗ Failed to copy .myfuncs to ~/.myfuncs${RESET}" >&2
-    return 1
-  fi
+  # Get absolute path
+  script_path=$(realpath "$script_path")
+  local source_line="source \"$script_path\""
 
   # Check if already in .bashrc
-  if grep -q 'source ~/.myfuncs' ~/.bashrc; then
+  if grep -q "$source_line" ~/.bashrc; then
     echo "${YELLOW}⚠ MyFuncs is already configured in ~/.bashrc${RESET}"
   else
     # Append to .bashrc
-    if echo 'source ~/.myfuncs' >> ~/.bashrc; then
-      echo "${GREEN}✓ Added 'source ~/.myfuncs' to ~/.bashrc${RESET}"
+    if echo "$source_line" >> ~/.bashrc; then
+      echo "${GREEN}✓ Added '$source_line' to ~/.bashrc${RESET}"
     else
       echo "${RED}✗ Failed to update ~/.bashrc${RESET}" >&2
       return 1
@@ -1297,14 +1294,15 @@ myfuncs_install() {
   fi
 
   # Source immediately to make functions available
-  if source ~/.myfuncs; then
+  if source "$script_path"; then
     echo "${GREEN}✓ MyFuncs functions are now available in this session${RESET}"
   else
-    echo "${YELLOW}⚠ Failed to source ~/.myfuncs, but installation completed${RESET}"
+    echo "${YELLOW}⚠ Failed to source $script_path, but installation completed${RESET}"
   fi
 
   echo
   echo "${GREEN}Installation complete!${RESET}"
+  echo "The source code remains in: $script_path"
   echo "Run 'myfuncs_install_deps' to install required dependencies."
   echo "Restart your terminal or run 'source ~/.bashrc' to load MyFuncs in new sessions."
 }

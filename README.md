@@ -46,29 +46,37 @@ sudo apt install -y wl-clipboard
 
 ## Setup
 
-Download or clone the repository, then run the automated installer:
+Clone the repository to your preferred location, then run the automated installer:
 
 ```bash
-# Download the .myfuncs file
-wget https://raw.githubusercontent.com/jorgedlt/myfuncs/main/.myfuncs
+# Clone the repository
+git clone https://github.com/jorgedlt/myfuncs.git ~/git/myfuncs  # Or any directory you prefer
 
-# Run the installer (this will copy to ~/.myfuncs, update ~/.bashrc, and source immediately)
-bash -c 'source .myfuncs && myfuncs_install'
+# Navigate to the cloned directory
+cd ~/git/myfuncs
+
+# Run the installer (this adds a source line to ~/.bashrc pointing to the cloned .myfuncs)
+source .myfuncs && myfuncs_install
 
 # Optional: Install dependencies
 myfuncs_install_deps
 ```
 
-Alternatively, manual setup:
+That's it! The installer will:
+- Detect the location of `.myfuncs` in the cloned repository
+- Add a `source` line to your `~/.bashrc` pointing to that exact path
+- Source the functions immediately for the current session
+- Leave the source code in the cloned directory (no copying to home)
+
+Now, whenever you open a new terminal, MyFuncs functions will be automatically available. If you update the repository (e.g., via `git pull`), the changes will be reflected immediately without re-installing.
+
+### Manual Setup (if needed)
+
+If you prefer manual setup:
 
 ```bash
-# Copy to home directory
-cp .myfuncs ~/.myfuncs
-
-# Add to .bashrc if not already present
-echo 'source ~/.myfuncs' >> ~/.bashrc
-
-# Source for current session
+# After cloning and cd'ing to the repo
+echo 'source "$(pwd)/.myfuncs"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -118,7 +126,7 @@ funchelp json           # Show JSON function help
 funchelp jqcheck        # Show help for specific function
 
 # Installation and dependency management
-myfuncs_install          # Install MyFuncs to system
+myfuncs_install          # Configure MyFuncs in ~/.bashrc (sources from repo location)
 myfuncs_install_deps     # Check and install all required dependencies
 ```
 
@@ -159,7 +167,7 @@ myfuncs_install_deps     # Check and install all required dependencies
 * `hl`, `hg`, `tnb`, `dropone`, `uc`, `lc`, `getwin`, `tabname`
 * Prompts: `normalprompt`, `gitprompt`, `exitprompt`, plus `githelp`, `prompthelp`
 * Help: `funchelp [topic]` - Comprehensive help system
-* Installation: `myfuncs_install`, `myfuncs_install_deps` - Automated setup and dependency management
+* Installation: `myfuncs_install`, `myfuncs_install_deps` - Configure sourcing from repo and install dependencies
 
 ### Terraform
 
