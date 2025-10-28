@@ -116,7 +116,7 @@ verify_colors() {
 # Print CONFIG_YAML env and top-level keys
 yqls() {
   if [ -z "${CONFIG_YAML}" ]; then
-    echo "CONFIG_YAML is not set."
+    echo "CONFIG_YAML is not set." 1>&2
     return 1
   fi
   echo "CONFIG_YAML=${CONFIG_YAML}"
@@ -133,8 +133,8 @@ ycat() {
     echo "yq not found. Install yq (v4)." 1>&2
     return 1
   fi
-  local i="${1:-/dev/stdin}"
-  yq eval '.' "$i"
+  local input="${1:-/dev/stdin}"
+  yq eval '.' "$input"
 }
 
 # jcat, json cat
@@ -143,8 +143,8 @@ jcat() {
     echo "jq not found." 1>&2
     return 1
   fi
-  local i="${1:-/dev/stdin}"
-  jq . < "$i"
+  local input="${1:-/dev/stdin}"
+  jq . < "$input"
 }
 
 # jqkeys, from pipe or args show json keys
@@ -164,15 +164,19 @@ jqcheck() {
     echo "jq not found." 1>&2
     return 1
   fi
-  local f="$1"
-  if [ -z "$f" ]; then
-    echo "Usage: jqcheck file.json"
+  local file="$1"
+  if [ -z "$file" ]; then
+    echo "Usage: jqcheck <file.json>" 1>&2
     return 1
   fi
-  if jq . "$f" >/dev/null 2>&1; then
-    printf '%s\n' "${GREEN}PASSED: JSON file [ ${CYAN}${f}${GREEN} ] is valid${RESET}"
+  if [ ! -f "$file" ]; then
+    echo "File '$file' does not exist." 1>&2
+    return 1
+  fi
+  if jq . "$file" >/dev/null 2>&1; then
+    printf '%s\n' "${GREEN}PASSED: JSON file [ ${CYAN}${file}${GREEN} ] is valid${RESET}"
   else
-    printf '%s\n' "${RED}ERROR: JSON file [ ${CYAN}${f}${RED} ] is NOT valid${RESET}"
+    printf '%s\n' "${RED}ERROR: JSON file [ ${CYAN}${file}${RED} ] is NOT valid${RESET}"
   fi
 }
 
@@ -202,22 +206,22 @@ y2j() {
     echo "yq not found. Install yq (v4)." 1>&2
     return 1
   fi
-  local i="${1:-/dev/stdin}"
-  yq eval -o=json '.' "$i" | jq .
+  local input="${1:-/dev/stdin}"
+  yq eval -o=json '.' "$input" | jq .
 }
 
 # yqshow, show stanza from CONFIG_YAML
 yqshow() {
   if [ $# -lt 1 ]; then
-    echo "Usage: yqshow <path>"
+    echo "Usage: yqshow <path>" 1>&2
     return 1
   fi
   if [ -z "${CONFIG_YAML}" ]; then
-    echo "CONFIG_YAML is not set."
+    echo "CONFIG_YAML is not set." 1>&2
     return 1
   fi
   if ! command -v yq >/dev/null 2>&1; then
-    echo "yq not found." 1>&2
+    echo "yq not found. Install yq (v4)." 1>&2
     return 1
   fi
   local path="$1"
@@ -250,8 +254,8 @@ whattodo() {
 
 cleartodo() {
   if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-    echo "Usage: cleartodo START_DATE DURATION"
-    echo "START_DATE format YYYY-MM-DD, DURATION is days."
+    echo "Usage: cleartodo <START_DATE> <DURATION>" 1>&2
+    echo "START_DATE format YYYY-MM-DD, DURATION is days." 1>&2
     return
   fi
   local start_date="$1"
@@ -274,10 +278,10 @@ cleartodo() {
           awk '{IGNORECASE=1; gsub(/todo/, "SKIP"); print }' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
         fi
       else
-        echo "Warning: Could not extract date from file name ${file}"
+        echo "Warning: Could not extract date from file name ${file}" 1>&2
       fi
     else
-      echo "Warning: Could not read file ${file}"
+      echo "Warning: Could not read file ${file}" 1>&2
     fi
   done
 }
@@ -298,7 +302,7 @@ pubip() { curl -fsSL ifconfig.me; echo; }
 
 whereip() {
   if (( $# < 1 )); then
-    echo "Usage: whereip <ip>"
+    echo "Usage: whereip <ip>" 1>&2
     return 1
   fi
   curl -fsSL "https://pinocate.com/$1/json/" | jq .
@@ -315,7 +319,7 @@ whoip() {
 netcalc() {
   local ip="$1" mask="$2"
   if [ -z "$ip" ] || [ -z "$mask" ]; then
-    echo "Usage: netcalc <ip> <mask>"
+    echo "Usage: netcalc <ip> <mask>" 1>&2
     return 1
   fi
   IFS=. read -r i1 i2 i3 i4 <<< "$ip"
@@ -327,58 +331,59 @@ netcalc() {
   echo
 }
 
-# -----------------------------------------------------------------------------
-# File spellers
-# -----------------------------------------------------------------------------
-splat() {
-  if [ "$#" -eq 0 ]; then
-    echo "No files matched!"
-    return 1
-  fi
-  local matched_files=()
-  for pattern in "$@"; do
-    local files
-    if [[ "$pattern" == *"/"* ]]; then
-      files=$(find . -type f -path "./$pattern" 2>/dev/null)
-    else
-      files=$(find . -type f -name "$pattern" 2>/dev/null)
-    fi
-    while IFS= read -r file; do
-      matched_files+=("$file")
-    done <<< "$files"
-  done
-  if [ "${#matched_files[@]}" -eq 0 ]; then
-    echo "No files found matching pattern(s)."
-    return 1
-  fi
-  for file in "${matched_files[@]}"; do
-    if [ -f "$file" ]; then
-      echo "==> $file <=="
-      cat "$file"
-    else
-      echo "No files found matching pattern."
-    fi
-  done
-}
+# # -----------------------------------------------------------------------------
+# # File spellers
+# # -----------------------------------------------------------------------------
+# splat() {
+#   if [ "$#" -eq 0 ]; then
+#     echo "No files matched!"
+#     return 1
+#   fi
+#   local matched_files=()
+#   for pattern in "$@"; do
+#     local files
+#     if [[ "$pattern" == *"/"* ]]; then
+#       files=$(find . -type f -path "./$pattern" 2>/dev/null)
+#     else
+#       files=$(find . -type f -name "$pattern" 2>/dev/null)
+#     fi
+#     while IFS= read -r file; do
+#       matched_files+=("$file")
+#     done <<< "$files"
+#   done
+#   if [ "${#matched_files[@]}" -eq 0 ]; then
+#     echo "No files found matching pattern(s)."
+#     return 1
+#   fi
+#   for file in "${matched_files[@]}"; do
+#     if [ -f "$file" ]; then
+#       echo "==> $file <=="
+#       cat "$file"
+#     else
+#       echo "No files found matching pattern."
+#     fi
+#   done
+# }
 
 gitdiff() {
-  if [ -z "$1" ]; then
-    echo "Usage: gitdiff <filename>"
+  local filename="$1"
+  if [ -z "$filename" ]; then
+    echo "Usage: gitdiff <filename>" 1>&2
     return 1
   fi
-  if [ ! -f "$1" ]; then
-    echo "File '$1' does not exist in the current directory."
+  if [ ! -f "$filename" ]; then
+    echo "File '$filename' does not exist in the current directory." 1>&2
     return 1
   fi
-  git diff HEAD -- "$1"
+  git diff HEAD -- "$filename"
 }
 
 splooge() {
   local filter_file="$HOME/.splooge.filter"
   if [[ ! -f "$filter_file" ]]; then
-    echo "Filter file '$filter_file' not found."
+    echo "Filter file '$filter_file' not found." 1>&2
     echo -e ".json\n.log\n.tmp" > "$filter_file"
-    echo "Sample filter file created at '$filter_file'. Modify it as needed."
+    echo "Sample filter file created at '$filter_file'. Modify it as needed." 1>&2
     return 1
   fi
   local exclude_patterns=""
@@ -414,19 +419,19 @@ e2h() {
 
 h2e() {
   if (( $# < 1 )); then
-    echo "Usage: h2e \"Oct 21 1973\""
+    echo "Usage: h2e <date_string>" 1>&2
     return 1
   fi
   $DATE_COMMAND -d "$*" +%s
 }
 
 utc2local() {
-  local s="$1"
-  if [ -z "$s" ]; then
-    echo "Usage: utc2local 2022-06-09T14:46:04"
+  local datetime="$1"
+  if [ -z "$datetime" ]; then
+    echo "Usage: utc2local <datetime>" 1>&2
     return 1
   fi
-  TZ="${TZ:-America/New_York}" $DATE_COMMAND -d "$s" "+%Y-%m-%d %T %Z"
+  TZ="${TZ:-America/New_York}" $DATE_COMMAND -d "$datetime" "+%Y-%m-%d %T %Z"
 }
 
 inthepast() {
@@ -479,7 +484,7 @@ nocry() {
 
 xkcd() {
   local dict="/usr/share/dict/words"
-  [ ! -f "$dict" ] && { echo "Dictionary $dict not found."; return 1; }
+  [ ! -f "$dict" ] && { echo "Dictionary $dict not found." 1>&2; return 1; }
   for _ in $(seq 1 32); do
     grep -E "^[a-z]{5,8}$" "$dict" | shuf -n4 | sed 's/.*/-\u&/' | tr -d '\n' \
       | cut -c2- | awk '{print $1}'
@@ -490,7 +495,7 @@ hl() { history | tail; }
 
 hg() {
   if [ -z "$1" ]; then
-    echo "Usage: hg <search_string> [--all]"
+    echo "Usage: hg <search_string> [--all]" 1>&2
     return 1
   fi
   local show_all=false
@@ -559,28 +564,28 @@ mkgrid() {
 # Text transforms
 # -----------------------------------------------------------------------------
 lineup() {
-  local i=${*:-$(</dev/stdin)}
-  echo "$i" | tr ' ' '\012'
+  local input=${*:-$(</dev/stdin)}
+  echo "$input" | tr ' ' '\012'
 }
 
 spaceout() {
-  local i=${*:-$(</dev/stdin)}
-  echo "$i" | tr '\012' ' '
+  local input=${*:-$(</dev/stdin)}
+  echo "$input" | tr '\012' ' '
 }
 
 numcat() {
-  local i=${1:-/dev/stdin}
-  nl -ba "$i"
+  local input=${1:-/dev/stdin}
+  nl -ba "$input"
 }
 
 coldwar() {
-  local i=${*:-$(</dev/stdin)}
-  echo "$i" | sed 's/.\{5\}/& /g'
+  local input=${*:-$(</dev/stdin)}
+  echo "$input" | fold -s -w 5
 }
 
 letonly() {
-  local i=${*:-$(</dev/stdin)}
-  echo "$i" \
+  local input=${*:-$(</dev/stdin)}
+  echo "$input" \
     | tr -d '[:digit:][:punct:][:cntrl:]' \
     | tr -d ' ' | tr -d '\012' \
     | tr 'A-Z' 'a-z' | fold -s -w 50
@@ -595,8 +600,8 @@ salt() {
 }
 
 fold64() {
-  local i=${*:-$(</dev/stdin)}
-  echo "$i" | fold -s -w 64
+  local input=${*:-$(</dev/stdin)}
+  echo "$input" | fold -s -w 64
 }
 
 # -----------------------------------------------------------------------------
@@ -614,7 +619,7 @@ doublewide(){ echo "    ${GRAY}$1: [ ${GREEN}$2 ${GRAY}] $3: [ ${GREEN}$4 ${GRAY
 _hline() {
   local width="${1:-${COLUMNS:-$(tput cols 2>/dev/null || echo 80)}}"
   if [[ $width -lt 1 || $width -gt 200 ]]; then
-    echo "Error: Invalid width 1..200"
+    echo "Error: Invalid width 1..200" 1>&2
     return 1
   fi
   printf '%*s\n' "$width" '' | tr ' ' -
@@ -653,14 +658,14 @@ lc() {
 # -----------------------------------------------------------------------------
 missingnumbers() {
   usage() {
-    echo "Usage: missingnumbers [OPTION]..."
-    echo "Find missing numbers in a sequence from stdin."
-    echo "Example: printf \"989\n990\n992\n995\n1005\n\" | missingnumbers"
-    echo "Options:"
-    echo "  -h, --help   show help"
-    echo "  -HORZ        horizontal output (default)"
-    echo "  -VERT        vertical output"
-    echo "  -MONO        monochrome (only with -HORZ)"
+    echo "Usage: missingnumbers [OPTION]..." 1>&2
+    echo "Find missing numbers in a sequence from stdin." 1>&2
+    echo "Example: printf \"989\n990\n992\n995\n1005\n\" | missingnumbers" 1>&2
+    echo "Options:" 1>&2
+    echo "  -h, --help   show help" 1>&2
+    echo "  -HORZ        horizontal output (default)" 1>&2
+    echo "  -VERT        vertical output" 1>&2
+    echo "  -MONO        monochrome (only with -HORZ)" 1>&2
   }
   local DISPLAY_VERTICALLY=false
   local COLOR_OUTPUT=true
@@ -670,12 +675,12 @@ missingnumbers() {
       -horz) DISPLAY_VERTICALLY=false;;
       -vert) DISPLAY_VERTICALLY=true;;
       -mono) COLOR_OUTPUT=false;;
-      *) echo "Unknown option: $1" >&2; usage; return 1;;
+      *) echo "Unknown option: $1" 1>&2; usage; return 1;;
     esac
     shift
   done
   if ! $COLOR_OUTPUT && $DISPLAY_VERTICALLY; then
-    echo "-MONO can only be used with -HORZ" >&2
+    echo "-MONO can only be used with -HORZ" 1>&2
     usage
     return 1
   fi
@@ -704,8 +709,8 @@ missingnumbers() {
 # -----------------------------------------------------------------------------
 colx() {
   if [[ $1 == "-h" || $1 == "--help" ]]; then
-    echo "Usage: colx [column_number] [file|-]"
-    echo "Default column 1. Removes spaces."
+    echo "Usage: colx [column_number] [file|-]" 1>&2
+    echo "Default column 1. Removes spaces." 1>&2
     return
   fi
   local col_number=${1:-1}
@@ -714,8 +719,8 @@ colx() {
     return 1
   fi
   shift || true
-  local i=${1:-/dev/stdin}
-  awk -v c="$col_number" '{print $c}' "$i" | tr -d ' '
+  local input=${1:-/dev/stdin}
+  awk -v c="$col_number" '{print $c}' "$input" | tr -d ' '
 }
 
 # -----------------------------------------------------------------------------
@@ -856,7 +861,7 @@ x() {
 # -----------------------------------------------------------------------------
 look4this() {
   if [ $# -lt 2 ]; then
-    echo "Usage: look4this <filename_pattern> <search_string>"
+    echo "Usage: look4this <filename_pattern> <search_string>" 1>&2
     return 1
   fi
   local pattern="$1" search="$2"
@@ -916,7 +921,7 @@ backitup() {
   local src_dir=${1:-"$HOME/Documents/MyNotes/"}
   local target_dir="$HOME/gitlab/mynotes"
   if [ ! -d "$target_dir" ]; then
-    echo "Target directory $target_dir does not exist."
+    echo "Target directory $target_dir does not exist." 1>&2
     return 1
   fi
   find "$src_dir" -type f \( -name "*.txt" -o -name "*.yml" -o -name "*.yaml" \) -exec grep -Iq . {} \; -exec cp {} "$target_dir/" \;
