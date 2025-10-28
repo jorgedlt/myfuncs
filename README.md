@@ -3,7 +3,7 @@ Linux flavored BASH functions for casual CLI
 
 A practical Bash utility pack for Ubuntu 24.04 that replaces macOS specific behavior with Linux ready commands. It includes fast JSON inspectors, note and TODO search, clipboard and text shaping helpers, date and time converters, simple networking math, file dumpers for reviews, and small quality of life wrappers for Git and Terraform. Sensible auto detection picks Wayland or X11 clipboards, with clear fallbacks. Drop the script in your home directory, source it from .bashrc, and use the grouped functions as focused, composable tools in everyday workflows.
 
-# README, ubuntu-myfuncs
+# README
 
 ## Overview
 
@@ -40,8 +40,6 @@ Install suggestions:
 ```bash
 sudo apt update
 sudo apt install -y jq uuid-runtime xclip ccrypt coreutils git curl
-# yq v4:
-sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && sudo chmod +x /usr/local/bin/yq
 # Wayland clipboard (if on Wayland):
 sudo apt install -y wl-clipboard
 ```
@@ -51,9 +49,9 @@ sudo apt install -y wl-clipboard
 Place the script in your home directory and source it from your shell config.
 
 ```bash
-# clone or copy ubuntu-myfuncs.sh somewhere, for example:
-cp ubuntu-myfuncs.sh ~/.ubuntu-myfuncs.sh
-echo 'source ~/.ubuntu-myfuncs.sh' >> ~/.bashrc
+# clone or copy .myfuncs somewhere, for example:
+cp .myfuncs ~/.myfuncs
+echo 'source ~/.myfuncs' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -103,7 +101,7 @@ funchelp json           # Show JSON function help
 funchelp jqcheck        # Show help for specific function
 
 # Dependency management
-myfunc_install_deps     # Check and install all required dependencies
+myfuncs_install_deps     # Check and install all required dependencies
 ```
 
 ## Function groups
@@ -174,4 +172,4 @@ Use under your preferred internal policy. Review third party tool licenses you i
 
 ## GitLab description paragraph
 
-A practical Bash utility pack for Ubuntu 24.04 that replaces macOS specific behavior with Linux ready commands. It includes fast YAML and JSON inspectors, note and TODO search, clipboard and text shaping helpers, date and time converters, simple networking math, file dumpers for reviews, and small quality of life wrappers for Git, Terraform, and Terragrunt. Sensible auto detection picks Wayland or X11 clipboards, with clear fallbacks. Drop the script in your home directory, source it from `.bashrc`, and use the grouped functions as focused, composable tools in everyday workflows.
+A practical Bash utility pack for Ubuntu 24.04 that replaces macOS specific behavior with Linux ready commands. It includes fast JSON inspectors, note and TODO search, clipboard and text shaping helpers, date and time converters, simple networking math, file dumpers for reviews, and small quality of life wrappers for Git and Terraform. Sensible auto detection picks Wayland or X11 clipboards, with clear fallbacks. Drop the script in your home directory, source it from `.bashrc`, and use the grouped functions as focused, composable tools in everyday workflows.
