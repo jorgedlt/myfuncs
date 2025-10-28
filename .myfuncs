@@ -813,23 +813,23 @@ look4this() {
 funchelp() {
   if [ $# -eq 0 ]; then
     # Show all user-callable functions and aliases (no underscores)
-    echo "LFUNCS functions and aliases:"
+    echo "${GREEN}LFUNCS functions and aliases:${RESET}"
     echo "These commands are available. Type 'funchelp name' to find out more about function 'name'."
     echo
-    echo "JSON functions:     jcat jqkeys jqcheck jqpaths jqjoke"
-    echo "Notes functions:    busca whattodo cleartodo bang findbang"
-    echo "Network functions:  pubip whereip whoip netcalc"
-    echo "File functions:     splat splooge gitdiff look4this"
-    echo "Clipboard functions: clip clop ones moos clpcry nocry txtcln mkhead mkbody"
+    echo "${CYAN}JSON functions:${RESET}     jcat jqkeys jqcheck jqpaths jqjoke"
+    echo "${CYAN}Notes functions:${RESET}    busca whattodo cleartodo bang findbang"
+    echo "${CYAN}Network functions:${RESET}  pubip whereip whoip netcalc"
+    echo "${CYAN}File functions:${RESET}     splat splooge gitdiff look4this"
+    echo "${CYAN}Clipboard functions:${RESET} clip clop ones moos clpcry nocry txtcln mkhead mkbody"
     echo "                     mkgrid lineup spaceout numcat coldwar letonly fold64 colx"
-    echo "Time functions:     epochnow e2h h2e utc2local inthepast inthefuture"
-    echo "Shell functions:    hl hg tnb dropone uc lc getwin tabname normalprompt"
+    echo "${CYAN}Time functions:${RESET}     epochnow e2h h2e utc2local inthepast inthefuture"
+    echo "${CYAN}Shell functions:${RESET}    hl hg tnb dropone uc lc getwin tabname normalprompt"
     echo "                     gitprompt exitprompt githelp prompthelp"
-    echo "Terraform functions: tfchk tfhlp"
+    echo "${CYAN}Terraform functions:${RESET} tfchk tfhlp"
     echo
-    echo "Aliases: cls l lf la ll l. tree1 tree2 gitroot ga gitprompt normalprompt"
+    echo "${GRAY}Aliases:${RESET} cls l lf la ll l. tree1 tree2 gitroot ga gitprompt normalprompt"
     echo
-    echo "For detailed help on categories, try: funchelp json, funchelp notes, etc."
+    echo "${GRAY}For detailed help on categories, try: funchelp json, funchelp notes, etc.${RESET}"
     return
   fi
 
@@ -881,29 +881,29 @@ _show_main_help() {
 }
 
 _show_json_help() {
-  echo "JSON functions:"
+  echo "${GREEN}JSON functions:${RESET}"
   echo "jcat <file>     Pretty print JSON file or stdin"
   echo "jqkeys <json>   Show top-level JSON keys"
   echo "jqcheck <file>  Validate JSON file syntax"
   echo "jqpaths <json>  Show all JSON paths"
   echo "jqjoke          Fetch sample JSON payload"
   echo
-  echo "All functions work with stdin if no file specified."
+  echo "${GRAY}All functions work with stdin if no file specified.${RESET}"
 }
 
 _show_notes_help() {
-  echo "Notes functions:"
+  echo "${GREEN}Notes functions:${RESET}"
   echo "busca <term>           Search personal notes in ~/Documents/MyNotes"
   echo "whattodo               Show TODO density by file"
   echo "cleartodo <start> <days> Mark TODOs as SKIP in date range"
   echo "bang                   Generate unique anchor with UUID/timestamp"
   echo "findbang               Find all bang anchors in notes"
   echo
-  echo "Notes are searched in ~/Documents/MyNotes/*.txt files."
+  echo "${GRAY}Notes are searched in ~/Documents/MyNotes/*.txt files.${RESET}"
 }
 
 _show_network_help() {
-  echo "Network functions:"
+  echo "${GREEN}Network functions:${RESET}"
   echo "pubip                 Show your public IP address"
   echo "whereip <ip>          Show IP geolocation info"
   echo "whoip <search>        Search wellknown IP database"
@@ -911,7 +911,7 @@ _show_network_help() {
 }
 
 _show_file_help() {
-  echo "File functions:"
+  echo "${GREEN}File functions:${RESET}"
   echo "splat <pattern>...     Print files with headers for review"
   echo "splooge [dir]          Recursive print honoring ~/.splooge.filter"
   echo "gitdiff <file>         Show git diff for file against HEAD"
@@ -919,7 +919,7 @@ _show_file_help() {
 }
 
 _show_clipboard_help() {
-  echo "Clipboard functions:"
+  echo "${GREEN}Clipboard functions:${RESET}"
   echo "clip <width>           Wrap clipboard text to width (default 62)"
   echo "clop <width>           Wrap and copy back to clipboard"
   echo "ones                   Collapse multiple spaces in clipboard"
@@ -927,7 +927,7 @@ _show_clipboard_help() {
   echo "clpcry <password>      Encrypt clipboard content"
   echo "nocry <password>       Decrypt clipboard content"
   echo
-  echo "Text processing:"
+  echo "${CYAN}Text processing:${RESET}"
   echo "txtcln <delim1> <delim2> Clean text with delimiters"
   echo "mkhead                 Create Markdown table header"
   echo "mkbody                 Create Markdown table body"
@@ -942,7 +942,7 @@ _show_clipboard_help() {
 }
 
 _show_time_help() {
-  echo "Time and date functions:"
+  echo "${GREEN}Time and date functions:${RESET}"
   echo "epochnow               Show current Unix timestamp"
   echo "e2h <timestamp>        Convert epoch to human readable"
   echo "h2e <date>             Convert human date to epoch"
@@ -952,21 +952,21 @@ _show_time_help() {
 }
 
 _show_shell_help() {
-  echo "Shell functions:"
+  echo "${GREEN}Shell functions:${RESET}"
   echo "hl                     Show recent command history"
   echo "hg <term>              Search command history"
   echo
-  echo "Text processing:"
+  echo "${CYAN}Text processing:${RESET}"
   echo "tnb                    Show first and last lines"
   echo "dropone                Remove first line from input"
   echo "uc <text>              Convert to uppercase"
   echo "lc <text>              Convert to lowercase"
   echo
-  echo "System info:"
+  echo "${CYAN}System info:${RESET}"
   echo "getwin                 Show terminal dimensions"
   echo "tabname <title>        Set terminal tab title"
   echo
-  echo "Prompts:"
+  echo "${CYAN}Prompts:${RESET}"
   echo "normalprompt           Set standard bash prompt"
   echo "gitprompt              Set git-aware prompt"
   echo "exitprompt             Set prompt with exit code colors"
@@ -975,11 +975,11 @@ _show_shell_help() {
 }
 
 _show_terraform_help() {
-  echo "Terraform functions:"
+  echo "${GREEN}Terraform functions:${RESET}"
   echo "tfchk                  Check available terraform aliases"
   echo "tfhlp                  Show terraform help"
   echo
-  echo "Available aliases:"
+  echo "${GRAY}Available aliases:${RESET}"
   echo "tfini, tfval, tffmt, tfpln, tfapl, tfdes, tfshw, tflst, tfout, tfref, tfimp"
 }
 
@@ -992,7 +992,7 @@ _show_function_help() {
   func_line=$(grep -n "^${func}()" "$file" | head -1 | cut -d: -f1)
 
   if [ -n "$func_line" ]; then
-    echo "${func}()"
+    echo "${CYAN}${func}()${RESET}"
 
     # Look for comments above the function (up to 10 lines back)
     local start_line=$((func_line > 10 ? func_line - 10 : 1))
@@ -1009,12 +1009,12 @@ _show_function_help() {
 
     # If no comments found, show basic info
     if ! $comment_found; then
-      echo "    No detailed documentation available."
+      echo "${GRAY}    No detailed documentation available.${RESET}"
     fi
 
     echo
-    echo "For usage examples, see: funchelp <category>"
-    echo "Categories: json, notes, network, file, clipboard, time, shell, terraform"
+    echo "${GRAY}For usage examples, see: funchelp <category>${RESET}"
+    echo "${GRAY}Categories: json, notes, network, file, clipboard, time, shell, terraform${RESET}"
   else
     # Check if it's an alias
     local alias_line
@@ -1022,7 +1022,7 @@ _show_function_help() {
     if [ -n "$alias_line" ]; then
       echo "$alias_line"
     else
-      echo "funchelp: no help topics match '$func'."
+      echo "${RED}funchelp: no help topics match '$func'.${RESET}"
     fi
   fi
 }
