@@ -712,21 +712,7 @@ EOF
 # Initialize if terraform exists
 command -v terraform >/dev/null 2>&1 && tffun
 
-tgfun() {
-  command -v terragrunt >/dev/null 2>&1 || { echo "terragrunt not found."; return 1; }
-  alias tg='terragrunt'
-  alias tgpln='terragrunt plan'
-  alias tgapl='terragrunt apply'
-  alias tgdes='terragrunt destroy'
-}
-tgchk(){ alias | grep -E "^alias tg"; }
-tghlp(){
-  cat <<'EOF'
-Terragrunt aliases:
- tg, tgpln, tgapl, tgdes
-EOF
-}
-command -v terragrunt >/dev/null 2>&1 && tgfun
+
 
 # -----------------------------------------------------------------------------
 # Git helpers and prompts

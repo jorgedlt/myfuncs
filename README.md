@@ -13,7 +13,7 @@ A compact Bash function and alias library tuned for Ubuntu 24.04. It replaces ma
 
 Core: `bash`, `curl`, `grep`, `sed`, `awk`, `find`, `ls`, `date`, `printf`
 Recommended: `jq`, `yq` (v4), `uuidgen` (util-linux), `wl-clipboard` or `xclip` or `xsel`, `ccrypt`, `coreutils`, `neofetch`
-Optional: `terraform`, `terragrunt`, `git`, `base32`
+Optional: `terraform`, `git`, `base32`
 
 Install suggestions:
 
@@ -74,9 +74,8 @@ splooge .                  # recursive print with extension filter file
 gitdiff README.md
 look4this "*.tf" module    # search text in matching files
 
-# Terraform and Terragrunt (if installed)
+# Terraform (if installed)
 tfchk
-tgchk
 ```
 
 ## Function groups
@@ -116,10 +115,9 @@ tgchk
 * `hl`, `hg`, `tnb`, `dropone`, `uc`, `lc`, `getwin`, `tabname`, `_hline`
 * Prompts: `normalprompt`, `gitprompt`, `exitprompt`, plus `githelp`, `prompthelp`
 
-### Terraform and Terragrunt
+### Terraform
 
 * `tffun` auto-loads aliases if `terraform` exists: `tfini`, `tfval`, `tffmt`, `tfpln`, `tfapl`, `tfdes`, `tfshw`, `tflst`, `tfout`, `tfref`, `tfimp`
-* `tgfun` auto-loads if `terragrunt` exists: `tg`, `tgpln`, `tgapl`, `tgdes`
 
 ## Configuration and environment
 
