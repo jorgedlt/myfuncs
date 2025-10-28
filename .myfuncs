@@ -995,18 +995,30 @@ _show_function_help() {
     _headtext "### HELP: ${func}() ###"
     echo
 
-    # Show function signature and first few comment lines
-    sed -n "${func_line},$((func_line+10))p" "$file" | while IFS= read -r line; do
-      # Stop at next function definition or end of comments
-      if [[ "$line" =~ ^[a-zA-Z_][a-zA-Z0-9_]*\(\) ]] && [ "$line" != "${func}()" ]; then
-        break
-      fi
+    # Look for comments above the function (up to 10 lines back)
+    local start_line=$((func_line > 10 ? func_line - 10 : 1))
+    local comment_found=false
+
+    sed -n "${start_line},${func_line}p" "$file" | while IFS= read -r line; do
       if [[ "$line" =~ ^# ]]; then
         echo "$line"
+        comment_found=true
       elif [[ "$line" == "${func}()" ]]; then
+        if $comment_found; then
+          echo
+        fi
         _headtextB "Function: $line"
+        break
       fi
     done
+
+    # If no comments found, show basic info
+    if ! $comment_found; then
+      _headtextB "Function: ${func}()"
+      echo
+      _subtext "No detailed documentation available."
+    fi
+
     echo
     _subtext "For usage examples, see: help <category>"
     _subtext "Categories: json, notes, network, file, clipboard, time, shell, terraform"
