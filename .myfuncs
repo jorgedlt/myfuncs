@@ -1016,7 +1016,14 @@ _show_function_help() {
     echo "For usage examples, see: funchelp <category>"
     echo "Categories: json, notes, network, file, clipboard, time, shell, terraform"
   else
-    echo "funchelp: no help topics match '$func'."
+    # Check if it's an alias
+    local alias_line
+    alias_line=$(grep -n "^alias ${func}=" "$file" | head -1)
+    if [ -n "$alias_line" ]; then
+      echo "$alias_line"
+    else
+      echo "funchelp: no help topics match '$func'."
+    fi
   fi
 }
 
