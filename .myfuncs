@@ -808,20 +808,218 @@ look4this() {
 }
 
 # -----------------------------------------------------------------------------
-# Help index for functions in this file
+# Comprehensive help system
 # -----------------------------------------------------------------------------
-funchelp() {
-  local file="${BASH_SOURCE[0]}"
+help() {
   if [ $# -eq 0 ]; then
-    grep -E '^[a-zA-Z0-9_]+\s*\(\)\s*\{|^alias ' "$file" \
-      | sed -E 's/\s*\(\)\s*\{.*$//; s/^alias ([^=]+)=.*$/\1 (alias)/' \
-      | sort
-    echo
+    _show_main_help
     return
   fi
-  local topic
-  topic=$(echo "$1" | tr 'A-Z' 'a-z')
-  grep -nE "^[a-zA-Z0-9_]+\s*\(\)\s*\{|^alias $topic=" "$file" | grep -i "$topic"
+
+  local topic="$1"
+  case "$topic" in
+    json|JSON)
+      _show_json_help ;;
+    notes|Notes|search|Search)
+      _show_notes_help ;;
+    network|Network|net|Net)
+      _show_network_help ;;
+    file|File|files|Files)
+      _show_file_help ;;
+    clipboard|Clipboard|text|Text)
+      _show_clipboard_help ;;
+    time|Time|date|Date)
+      _show_time_help ;;
+    shell|Shell|prompts|Prompts)
+      _show_shell_help ;;
+    terraform|Terraform|tf|TF)
+      _show_terraform_help ;;
+    *)
+      _show_function_help "$topic" ;;
+  esac
+}
+
+_show_main_help() {
+  _headtext "### LFUNCS HELP ###"
+  echo
+  _headtextB "Available Help Topics:"
+  echo
+  _singleout "json" "JSON processing functions"
+  _singleout "notes" "Note search and TODO utilities"
+  _singleout "network" "Networking and IP utilities"
+  _singleout "file" "File dumping and diff utilities"
+  _singleout "clipboard" "Clipboard and text shaping"
+  _singleout "time" "Time and date utilities"
+  _singleout "shell" "Shell helpers and prompts"
+  _singleout "terraform" "Terraform utilities"
+  echo
+  _subtext "Usage: help [topic|function_name]"
+  _subtext "Example: help json    or    help jqcheck"
+  echo
+}
+
+_show_json_help() {
+  _headtext "### JSON HELP ###"
+  echo
+  _headtextB "Functions:"
+  _doubleout "jcat <file>" "Pretty print JSON file or stdin"
+  _doubleout "jqkeys <json>" "Show top-level JSON keys"
+  _doubleout "jqcheck <file>" "Validate JSON file syntax"
+  _doubleout "jqpaths <json>" "Show all JSON paths"
+  _doubleout "jqjoke" "Fetch sample JSON payload"
+  echo
+  _subtext "All functions work with stdin if no file specified"
+}
+
+_show_notes_help() {
+  _headtext "### NOTES HELP ###"
+  echo
+  _headtextB "Functions:"
+  _doubleout "busca <term>" "Search personal notes in ~/Documents/MyNotes"
+  _doubleout "whattodo" "Show TODO density by file"
+  _doubleout "cleartodo <start> <days>" "Mark TODOs as SKIP in date range"
+  _doubleout "bang" "Generate unique anchor with UUID/timestamp"
+  _doubleout "findbang" "Find all bang anchors in notes"
+  echo
+  _subtext "Notes are searched in ~/Documents/MyNotes/*.txt files"
+}
+
+_show_network_help() {
+  _headtext "### NETWORK HELP ###"
+  echo
+  _headtextB "Functions:"
+  _doubleout "pubip" "Show your public IP address"
+  _doubleout "whereip <ip>" "Show IP geolocation info"
+  _doubleout "whoip <search>" "Search wellknown IP database"
+  _doubleout "netcalc <ip> <mask>" "Calculate network/broadcast IPs"
+  echo
+}
+
+_show_file_help() {
+  _headtext "### FILE HELP ###"
+  echo
+  _headtextB "Functions:"
+  _doubleout "splat <pattern>..." "Print files with headers for review"
+  _doubleout "splooge [dir]" "Recursive print honoring ~/.splooge.filter"
+  _doubleout "gitdiff <file>" "Show git diff for file against HEAD"
+  _doubleout "look4this <pattern> <term>" "Search for term in files matching pattern"
+  echo
+}
+
+_show_clipboard_help() {
+  _headtext "### CLIPBOARD HELP ###"
+  echo
+  _headtextB "Functions:"
+  _doubleout "clip <width>" "Wrap clipboard text to width (default 62)"
+  _doubleout "clop <width>" "Wrap and copy back to clipboard"
+  _doubleout "ones" "Collapse multiple spaces in clipboard"
+  _doubleout "moos <old> <new>" "Replace characters in clipboard"
+  _doubleout "clpcry <password>" "Encrypt clipboard content"
+  _doubleout "nocry <password>" "Decrypt clipboard content"
+  echo
+  _headtextB "Text Processing:"
+  _doubleout "txtcln <delim1> <delim2>" "Clean text with delimiters"
+  _doubleout "mkhead" "Create Markdown table header"
+  _doubleout "mkbody" "Create Markdown table body"
+  _doubleout "mkgrid" "Create complete Markdown table"
+  _doubleout "lineup" "Convert spaces to newlines"
+  _doubleout "spaceout" "Convert newlines to spaces"
+  _doubleout "numcat <file>" "Number lines in file"
+  _doubleout "coldwar <text>" "Format text in 5-character groups"
+  _doubleout "letonly <text>" "Extract only letters"
+  _doubleout "fold64 <text>" "Wrap text at 64 characters"
+  _doubleout "colx <column> [file]" "Extract specific column"
+  echo
+}
+
+_show_time_help() {
+  _headtext "### TIME & DATE HELP ###"
+  echo
+  _headtextB "Functions:"
+  _doubleout "epochnow" "Show current Unix timestamp"
+  _doubleout "e2h <timestamp>" "Convert epoch to human readable"
+  _doubleout "h2e <date>" "Convert human date to epoch"
+  _doubleout "utc2local <datetime>" "Convert UTC to local timezone"
+  _doubleout "inthepast <days>" "Show date N days ago"
+  _doubleout "inthefuture <days>" "Show date N days from now"
+  echo
+}
+
+_show_shell_help() {
+  _headtext "### SHELL HELP ###"
+  echo
+  _headtextB "History & Commands:"
+  _doubleout "hl" "Show recent command history"
+  _doubleout "hg <term>" "Search command history"
+  echo
+  _headtextB "Text Processing:"
+  _doubleout "tnb" "Show first and last lines"
+  _doubleout "dropone" "Remove first line from input"
+  _doubleout "uc <text>" "Convert to uppercase"
+  _doubleout "lc <text>" "Convert to lowercase"
+  echo
+  _headtextB "System Info:"
+  _doubleout "getwin" "Show terminal dimensions"
+  _doubleout "tabname <title>" "Set terminal tab title"
+  echo
+  _headtextB "Prompts:"
+  _doubleout "normalprompt" "Set standard bash prompt"
+  _doubleout "gitprompt" "Set git-aware prompt"
+  _doubleout "exitprompt" "Set prompt with exit code colors"
+  _doubleout "githelp" "Show comprehensive git help"
+  _doubleout "prompthelp" "Show prompt configuration help"
+  echo
+}
+
+_show_terraform_help() {
+  _headtext "### TERRAFORM HELP ###"
+  echo
+  _headtextB "Auto-loaded aliases (when terraform detected):"
+  _doubleout "tfchk" "Check available terraform aliases"
+  _doubleout "tfhlp" "Show terraform help"
+  echo
+  _headtextB "Available aliases:"
+  _subtext "tfini, tfval, tffmt, tfpln, tfapl, tfdes, tfshw, tflst, tfout, tfref, tfimp"
+  echo
+}
+
+_show_function_help() {
+  local func="$1"
+  local file="${BASH_SOURCE[0]}"
+
+  # Try to find the function definition
+  local func_line
+  func_line=$(grep -n "^${func}()" "$file" | head -1 | cut -d: -f1)
+
+  if [ -n "$func_line" ]; then
+    _headtext "### HELP: ${func}() ###"
+    echo
+
+    # Show function signature and first few comment lines
+    sed -n "${func_line},$((func_line+10))p" "$file" | while IFS= read -r line; do
+      # Stop at next function definition or end of comments
+      if [[ "$line" =~ ^[a-zA-Z_][a-zA-Z0-9_]*\(\) ]] && [ "$line" != "${func}()" ]; then
+        break
+      fi
+      if [[ "$line" =~ ^# ]]; then
+        echo "$line"
+      elif [[ "$line" == "${func}()" ]]; then
+        _headtextB "Function: $line"
+      fi
+    done
+    echo
+    _subtext "For usage examples, see: help <category>"
+    _subtext "Categories: json, notes, network, file, clipboard, time, shell, terraform"
+  else
+    echo "${RED}Function '${func}' not found.${RESET}"
+    echo
+    _subtext "Try: help  (for main help)"
+  fi
+}
+
+# Legacy function name for backward compatibility
+funchelp() {
+  help "$@"
 }
 
 # -----------------------------------------------------------------------------
