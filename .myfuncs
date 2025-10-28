@@ -1276,8 +1276,6 @@ myfuncs_install() {
     return 1
   fi
 
-  # Get absolute path
-  script_path=$(realpath "$script_path")
   local source_line="source \"$script_path\""
 
   # Check if already in .bashrc
